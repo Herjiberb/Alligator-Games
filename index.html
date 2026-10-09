@@ -187,7 +187,7 @@ rl:()=>{try{$('#gf').contentWindow.location.reload()}catch{$('#gf').src=$('#gf')
 min:t=>{const b=$('#bar');b.classList.toggle('min');t.textContent=b.classList.contains('min')?'▴':'▾'},
 mclose:()=>modal(),
 prof:()=>modal(`<div class="flex items-center gap-3 mb-4"><span class="w-12 h-12 block">${LOGO}</span><div><h3 class="font-bold text-lg">Profile</h3><div class="text-xs text-[var(--mu)]">${L.size} liked, ${Object.keys(P).length} played</div></div></div><label class="text-sm font-semibold">Edit password</label><div class="flex gap-2 mt-1 mb-5"><input id="ppw" type="password" class="flex-1 px-3 py-2 rounded-xl bg-[var(--bg)] border border-[var(--ln)] outline-none focus:border-[var(--ac)]"><button class="btn ac" data-a="openEd">Open editor</button></div>`),
-openEd:()=>{if($('#ppw').value!=PW)return toast('Wrong password');localStorage.ag_ed=Date.now()+36e5;modal();window.open(location.href.split('#')[0]+'#/editor','_blank')},
+openEd:()=>{if($('#ppw').value!=PW)return toast('Wrong password');localStorage.ag_ed=Date.now()+36e5;modal();location.hash='#/editor'},
 unlock:()=>{if($('#pw').value==PW){localStorage.ag_ed=Date.now()+36e5;ed()}else toast('Wrong password')},
 sec:(t,d)=>{E.sec=d.s;ed()},save,
 pc:()=>$('#fcov').click(),ps:()=>$('#fshots').click(),rc:()=>{E.m.cover='';ed()},rs:(t,d)=>{E.m.shots.splice(d.i,1);ed()},
