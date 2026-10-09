@@ -91,7 +91,7 @@ const byRec=a=>[...a].sort((x,y)=>rec(y).s-rec(x).s);
 function topc(){const c={};G.forEach(x=>{const k=(L.has(x.id)?3:0)+(P[x.id]||0)*.4;(x.tags||[]).forEach(t=>c[t]=(c[t]||0)+k+.01)});return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(x=>x[0])}
 function list(){return G.filter(g=>(!F.q||(g.title+g.tagline+g.dev+(g.tags||[]).join()).toLowerCase().includes(F.q.toLowerCase()))&&(!F.cat||(g.tags||[]).includes(F.cat))&&(!F.st||(F.st=='up')==up(g))).sort((a,b)=>F.sort=='az'?a.title.localeCompare(b.title):F.sort=='new'?new Date(b.date||0)-new Date(a.date||0):rec(b).s-rec(a).s)}
 function toast(m){const t=document.createElement('div');t.className='fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] px-4 py-2 rounded-xl bg-[#222b27] border border-[#3d4a44] text-white shadow-xl fade';t.textContent=m;$('#toast').append(t);setTimeout(()=>t.remove(),3500)}
-function modal(x){$('#modal').innerHTML=x?`<div class="fixed inset-0 z-50 grid place-items-center bg-black/60 fade" data-a="mclose"><div class="pn p-6 w-[min(460px,92vw)]" onclick="event.stopPropagation()">${x}</div></div>`:''}
+function modal(x){$('#modal').innerHTML=x?`<div class="fixed inset-0 z-50 grid place-items-center bg-black/60 fade" data-a="mclose"><div class="pn p-6 w-[min(460px,92vw)]">${x}</div></div>`:''}
 /* ---------- Store UI ---------- */
 const CH='<svg class="chev w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M5.5 7.5 10 12l4.5-4.5-1.4-1.4L10 9.2 6.9 6.1z"/></svg>';
 const dd=(k,lab,o)=>`<div class="dd relative"><button data-a="dd" class="btn">${lab}: <span class="text-[var(--ac)]">${h((o.find(x=>x[0]==F[k])||o[0])[1])}</span>${CH}</button><div class="ddm absolute z-20 mt-2 min-w-full w-max max-h-72 overflow-auto pn p-1 shadow-2xl">${o.map(x=>`<button data-a="opt" data-k="${k}" data-v="${h(x[0])}" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-[var(--p2)] ${x[0]==F[k]?'text-[var(--ac)]':''}">${h(x[1])}</button>`).join('')}</div></div>`;
@@ -185,7 +185,7 @@ exit:()=>location.hash='#/game/'+CUR,shot_:0,
 fs:()=>document.documentElement.requestFullscreen?.(),
 rl:()=>{try{$('#gf').contentWindow.location.reload()}catch{$('#gf').src=$('#gf').src}},
 min:t=>{const b=$('#bar');b.classList.toggle('min');t.textContent=b.classList.contains('min')?'▴':'▾'},
-mclose:()=>modal(),
+mclose:(t,d,e)=>{if(e.target==t)modal()},
 prof:()=>modal(`<div class="flex items-center gap-3 mb-4"><span class="w-12 h-12 block">${LOGO}</span><div><h3 class="font-bold text-lg">Profile</h3><div class="text-xs text-[var(--mu)]">${L.size} liked, ${Object.keys(P).length} played</div></div></div><label class="text-sm font-semibold">Edit password</label><div class="flex gap-2 mt-1 mb-5"><input id="ppw" type="password" class="flex-1 px-3 py-2 rounded-xl bg-[var(--bg)] border border-[var(--ln)] outline-none focus:border-[var(--ac)]"><button class="btn ac" data-a="openEd">Open editor</button></div>`),
 openEd:()=>{if($('#ppw').value!=PW)return toast('Wrong password');localStorage.ag_ed=Date.now()+36e5;modal();location.hash='#/editor'},
 unlock:()=>{if($('#pw').value==PW){localStorage.ag_ed=Date.now()+36e5;ed()}else toast('Wrong password')},
