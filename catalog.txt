@@ -1,0 +1,1 @@
+# Paste exported game data here: one 'AGD1:...' line per game.
