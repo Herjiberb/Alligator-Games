@@ -24,7 +24,7 @@ function inject() {
   const rx = /url\(\s*(['"]?)(?!data:|#)(.*?)\1\s*\)/g;
   const rs = async (t, base) => { const m = [...t.matchAll(rx)], rep = await Promise.all(m.map(x => b64(new URL(x[2], base).href))); let i = 0; return t.replace(rx, () => `url("${rep[i++]}")`) };
   const KEEP = ['position', 'left', 'top', 'right', 'bottom', 'transform', 'transformOrigin', 'zIndex', 'margin', 'objectFit', 'objectPosition', 'display', 'opacity', 'filter', 'imageRendering'];
-  window.__snap = async () => {
+  const full = async () => {
     const W = innerWidth, H = innerHeight, k = Math.max(1, devicePixelRatio || 1);
     const els = [...document.querySelectorAll(SEL)];
     const urls = await Promise.all((await Promise.all(await frames())).map(enc));
@@ -51,6 +51,16 @@ function inject() {
     const x = o.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, o.width, o.height); x.drawImage(img, 0, 0, o.width, o.height);
     return new Promise(ok => o.toBlob(ok, 'image/png'));
   };
+  // fallback: composite visible canvases/videos at their on-screen positions (always works, same-origin)
+  const lite = async () => {
+    const W = innerWidth, H = innerHeight, k = Math.max(1, devicePixelRatio || 1);
+    const els = [...document.querySelectorAll(SEL)], bm = await Promise.all(await frames());
+    const o = document.createElement('canvas'); o.width = W * k; o.height = H * k;
+    const x = o.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, o.width, o.height);
+    els.forEach((el, i) => { const r = el.getBoundingClientRect(); if (bm[i] && r.width > 1) x.drawImage(bm[i], r.left * k, r.top * k, r.width * k, r.height * k) });
+    return new Promise(ok => o.toBlob(ok, 'image/png'));
+  };
+  window.__snap = async () => { try { return await full() } catch (e) { console.warn('[snap] full DOM render failed, using canvas composite:', e); return lite() } };
 }
 const INJ = '<script>(' + inject + ')()</script>';
 async function inj(r) {
