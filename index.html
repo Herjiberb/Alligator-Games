@@ -156,9 +156,11 @@ function comp(){try{const w=$('#gf').contentWindow,d=w.document,cs=$$('canvas',d
  const t=document.createElement('canvas');t.width=t.height=24;const y=t.getContext('2d');y.drawImage(o,0,0,24,24);const p=y.getImageData(0,0,24,24).data;let any=0;for(let i=0;i<p.length;i+=4)if(p[i]+p[i+1]+p[i+2]>12){any=1;break}
  return any?o.toDataURL('image/png'):''}catch{return''}}
 async function grab(){let s;const b=$('#bar');try{s=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'browser'},audio:false,preferCurrentTab:true,selfBrowserSurface:'include'});b.style.visibility='hidden';$('#toast').style.visibility='hidden';const v=document.createElement('video');v.srcObject=s;v.muted=true;await v.play();await new Promise(r=>setTimeout(r,300));const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);return c.toDataURL('image/png')}catch{return''}finally{b.style.visibility='';$('#toast').style.visibility='';s?.getTracks().forEach(t=>t.stop())}}
-async function shot(){let b;try{b=await $('#gf').contentWindow.__snap()}catch{}
-if(!b){toast('Pick this tab in the prompt to capture the game');b=await grab()}if(!b)return toast('Screenshot failed or was cancelled');
-const a=document.createElement('a');a.href=typeof b=='string'?b:URL.createObjectURL(b);a.download=CUR+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5e3)}
+async function shot(){let b;try{const w=$('#gf').contentWindow;
+if(!w.__snap){const t=await(await fetch('sw.js',{cache:'no-store'})).text();w.eval('('+t.slice(t.indexOf('function inject'),t.indexOf('const INJ'))+')()')}
+b=await w.__snap()}catch(e){console.error(e)}
+if(!b)return toast('Screenshot failed (this game is not same-origin)');
+const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=CUR+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5e3)}
 /* ---------- Editor (GitHub-style) ---------- */
 const blank=()=>({id:'',title:'',tagline:'',desc:'',dev:'Alligator Games',cr:['alligator-games'],status:'released',date:'',price:'Free',tags:[],color:'#3ddc84',cover:'',shots:[],license:'',featured:false,src:{type:'bundle',entry:'',name:'',url:''}});
 let E={m:blank(),files:[],found:[],sec:'general',handle:null,idt:0};
@@ -265,5 +267,5 @@ async function render(){clearInterval(HT);modal();document.title='Alligator Game
  LR=r}
 addEventListener('hashchange',render);
 let tl=null;document.addEventListener('pointermove',e=>{if(e.pointerType!='mouse')return;const t=e.target.closest?.('.tilt');if(tl&&tl!=t){tl.style.removeProperty('--rx');tl.style.removeProperty('--ry')}tl=t;if(!t)return;const r=t.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;t.style.setProperty('--ry',(x-.5)*14+'deg');t.style.setProperty('--rx',(.5-y)*14+'deg');t.style.setProperty('--mx',x*100+'%');t.style.setProperty('--my',y*100+'%')},{passive:true});
-(async()=>{if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');await seed();await cat();await load();render()})();
+(async()=>{if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update());await seed();await cat();await load();render()})();
 </script></body></html>
