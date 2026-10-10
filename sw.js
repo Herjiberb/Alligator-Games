@@ -5,29 +5,68 @@ self.addEventListener('fetch', e => {
   const u = new URL(e.request.url), m = u.pathname.match(/\/__g\/([^/]+)\/(.*)$/);
   if (m) e.respondWith(serve(u, m[1], decodeURIComponent(m[2])).then(inj));
 });
-// Injected into every game HTML page. Adds window.__ag: mute control (WebAudio + media elements) and a frame counter for the FPS meter.
+// Injected into every game HTML page. Adds window.__ag: volume/mute, pause, game speed, auto-click and a frame counter.
 function inject() {
   if (window.__ag) return;
-  const ag = window.__ag = { mute: false, frames: 0, gains: new Map(), els: new Set(), om: new Map() };
-  try { ag.mute = parent.localStorage.agmute == '1' } catch { }
+  const ag = window.__ag = { mute: false, vol: 1, speed: 1, paused: false, frames: 0, gains: new Map(), els: new Set(), om: new Map(), pe: new Set(), held: [], mx: null, my: null };
+  try { ag.mute = parent.localStorage.agmute == '1'; ag.vol = (JSON.parse(parent.localStorage.agopts || '{}').vol ?? 100) / 100 } catch { }
+  const orig = { now: performance.now.bind(performance), dnow: Date.now.bind(Date), st: window.setTimeout.bind(window), si: window.setInterval.bind(window) };
+  // virtual clock (only installed when speed != 1 or the game is paused)
+  let vt = 0, last = 0, patched = false;
+  const adv = () => { const r = orig.now(); vt += (r - last) * (ag.paused ? 0 : ag.speed); last = r; return vt };
+  const install = () => {
+    if (patched) return; patched = true; vt = last = orig.now(); const d0 = orig.dnow() - vt;
+    performance.now = () => adv(); Date.now = () => d0 + adv();
+    window.setTimeout = (f, d, ...a) => orig.st(f, (d || 0) / (ag.speed || 1), ...a);
+    window.setInterval = (f, d, ...a) => orig.si(f, (d || 0) / (ag.speed || 1), ...a);
+  };
   const raf = window.requestAnimationFrame.bind(window);
-  window.requestAnimationFrame = cb => raf(t => { ag.frames++; cb(t) });
+  window.requestAnimationFrame = cb => raf(t => { if (ag.paused) { ag.held.push(cb); return } ag.frames++; cb(patched ? adv() : t) });
+  document.addEventListener('pointermove', e => { ag.mx = e.clientX; ag.my = e.clientY }, true);
   // route everything that reaches the speakers through one master gain per AudioContext
   const oc = AudioNode.prototype.connect;
   AudioNode.prototype.connect = function (d, ...a) {
     if (typeof AudioDestinationNode != 'undefined' && d instanceof AudioDestinationNode) {
       const c = this.context; let g = ag.gains.get(c);
-      if (!g) { g = c.createGain(); g.gain.value = ag.mute ? 0 : 1; oc.call(g, d); ag.gains.set(c, g) }
+      if (!g) { g = c.createGain(); g.gain.value = ag.mute ? 0 : ag.vol; oc.call(g, d); ag.gains.set(c, g) }
       if (this !== g) { oc.call(this, g, ...a); return d }
     }
     return oc.call(this, d, ...a);
   };
   const pl = HTMLMediaElement.prototype.play;
-  HTMLMediaElement.prototype.play = function () { ag.els.add(this); if (ag.mute) { if (!ag.om.has(this)) ag.om.set(this, this.muted); this.muted = true } return pl.apply(this, arguments) };
+  HTMLMediaElement.prototype.play = function () {
+    ag.els.add(this); if (ag.vol != 1) try { this.volume = ag.vol } catch { }
+    if (ag.mute) { if (!ag.om.has(this)) ag.om.set(this, this.muted); this.muted = true }
+    return pl.apply(this, arguments)
+  };
+  const media = () => { document.querySelectorAll('audio,video').forEach(e => ag.els.add(e)); return ag.els };
   ag.setMute = m => {
-    ag.mute = m; ag.gains.forEach(g => g.gain.value = m ? 0 : 1);
-    document.querySelectorAll('audio,video').forEach(e => ag.els.add(e));
-    ag.els.forEach(e => { if (m) { if (!ag.om.has(e)) ag.om.set(e, e.muted); e.muted = true } else { e.muted = ag.om.get(e) ?? false; ag.om.delete(e) } });
+    ag.mute = m; ag.gains.forEach(g => g.gain.value = m ? 0 : ag.vol);
+    media().forEach(e => { if (m) { if (!ag.om.has(e)) ag.om.set(e, e.muted); e.muted = true } else { e.muted = ag.om.get(e) ?? false; ag.om.delete(e) } });
+  };
+  ag.setVol = v => { ag.vol = v; ag.gains.forEach(g => g.gain.value = ag.mute ? 0 : v); media().forEach(e => { try { e.volume = v } catch { } }) };
+  ag.setSpeed = s => { if (patched) adv(); ag.speed = s; if (s != 1) install() };
+  ag.setPause = p => {
+    if (p === ag.paused) return;
+    if (p) {
+      install(); adv(); ag.paused = true;
+      ag.gains.forEach((g, c) => c.suspend && c.suspend().catch(() => { }));
+      media().forEach(e => { if (!e.paused) { e.pause(); ag.pe.add(e) } });
+    } else {
+      last = orig.now(); ag.paused = false;
+      ag.gains.forEach((g, c) => c.resume && c.resume().catch(() => { }));
+      ag.pe.forEach(e => e.play().catch(() => { })); ag.pe.clear();
+      ag.held.splice(0).forEach(cb => window.requestAnimationFrame(cb));
+    }
+  };
+  let ai = 0;
+  ag.setAuto = n => {
+    clearInterval(ai); ai = 0; if (!n) return;
+    ai = orig.si(() => {
+      if (ag.paused) return;
+      const x = ag.mx ?? innerWidth / 2, y = ag.my ?? innerHeight / 2, el = document.elementFromPoint(x, y) || document.body, o = { bubbles: true, cancelable: true, clientX: x, clientY: y, button: 0, view: window };
+      for (const t of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) el.dispatchEvent(t[0] == 'p' ? new PointerEvent(t, { ...o, pointerType: 'mouse', isPrimary: true }) : new MouseEvent(t, o));
+    }, 1000 / n);
   };
 }
 // Per-game storage namespacing: all games share one origin, so localStorage/IndexedDB names get a "g:<id>:" prefix.
