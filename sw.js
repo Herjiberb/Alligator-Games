@@ -62,7 +62,30 @@ function inject() {
   };
   window.__snap = async () => { try { return await full() } catch (e) { console.warn('[snap] full DOM render failed, using canvas composite:', e); return lite() } };
 }
-const INJ = '<script>(' + inject + ')()</script>';
+// Per-game storage namespacing: all games share one origin, so localStorage/IndexedDB names get a "g:<id>:" prefix.
+// This lets the app measure and wipe each game's data separately.
+function shim() {
+  const m = location.pathname.match(/\/__g\/([^/]+)\//); if (!m || window.__gs) return; window.__gs = 1;
+  const P = 'g:' + decodeURIComponent(m[1]) + ':', own = Object.hasOwn;
+  try {
+    const real = window.localStorage, mine = () => { const o = []; for (let i = 0; i < real.length; i++) { const k = real.key(i); if (k.startsWith(P)) o.push(k.slice(P.length)) } return o };
+    const api = { getItem: k => real.getItem(P + k), setItem: (k, v) => real.setItem(P + k, v), removeItem: k => real.removeItem(P + k), clear: () => mine().forEach(k => real.removeItem(P + k)), key: i => mine()[i] ?? null };
+    const px = new Proxy({}, {
+      get: (t, k) => k == 'length' ? mine().length : typeof k != 'string' ? undefined : own(api, k) ? api[k] : (real.getItem(P + k) ?? undefined),
+      set: (t, k, v) => { real.setItem(P + k, v); return true }, deleteProperty: (t, k) => { real.removeItem(P + k); return true },
+      has: (t, k) => typeof k == 'string' && (own(api, k) || real.getItem(P + k) !== null), ownKeys: () => mine(),
+      getOwnPropertyDescriptor: (t, k) => typeof k == 'string' && real.getItem(P + k) !== null ? { value: real.getItem(P + k), enumerable: true, configurable: true, writable: true } : undefined
+    });
+    Object.defineProperty(window, 'localStorage', { get: () => px, configurable: true });
+  } catch { }
+  try {
+    const idb = window.indexedDB;
+    const w = { open: (n, v) => v === undefined ? idb.open(P + n) : idb.open(P + n, v), deleteDatabase: n => idb.deleteDatabase(P + n), cmp: (a, b) => idb.cmp(a, b),
+      databases: async () => (await idb.databases()).filter(d => d.name.startsWith(P)).map(d => ({ ...d, name: d.name.slice(P.length) })) };
+    Object.defineProperty(window, 'indexedDB', { get: () => w, configurable: true });
+  } catch { }
+}
+const INJ = '<script>(' + shim + ')();(' + inject + ')()</script>';
 async function inj(r) {
   const ct = r.headers.get('Content-Type') || '';
   if (!/text\/html/i.test(ct)) return r;
