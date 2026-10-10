@@ -157,29 +157,7 @@ function comp(){try{const w=$('#gf').contentWindow,d=w.document,cs=$$('canvas',d
  return any?o.toDataURL('image/png'):''}catch{return''}}
 async function grab(){let s;const b=$('#bar');try{s=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'browser'},audio:false,preferCurrentTab:true,selfBrowserSurface:'include'});b.style.visibility='hidden';$('#toast').style.visibility='hidden';const v=document.createElement('video');v.srcObject=s;v.muted=true;await v.play();await new Promise(r=>setTimeout(r,300));const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);return c.toDataURL('image/png')}catch{return''}finally{b.style.visibility='';$('#toast').style.visibility='';s?.getTracks().forEach(t=>t.stop())}}
 function hasUI(){try{const w=$('#gf').contentWindow,d=w.document;return $$('body *',d).some(e=>{if(/^(CANVAS|SCRIPT|STYLE|LINK|META|BR|NOSCRIPT|TEMPLATE)$/i.test(e.tagName))return 0;const r=e.getBoundingClientRect(),cs=w.getComputedStyle(e);if(r.width<4||r.height<4||cs.display=='none'||cs.visibility=='hidden'||+cs.opacity==0)return 0;if(/^(SVG|IMG|VIDEO|BUTTON|INPUT)$/i.test(e.tagName))return 1;if(cs.backgroundImage!='none')return 1;return [...e.childNodes].some(n=>n.nodeType==3&&n.textContent.trim())})}catch{return 1}}
-/* No-prompt capture: re-draws the game's live DOM (UI, SVG, text, layers) + canvases via an SVG foreignObject, all inlined so nothing is blocked */
-const du=async u=>{try{const b=await(await fetch(u)).blob();return await new Promise(r=>{const f=new FileReader;f.onload=()=>r(f.result);f.readAsDataURL(b)})}catch{return u}};
-async function domShot(){try{const w=$('#gf').contentWindow,d=w.document,W=w.innerWidth,H=w.innerHeight,O=[d.documentElement,...d.querySelectorAll('*')];if(O.length>8000)return'';
- const R=d.documentElement.cloneNode(true),K=[R,...R.querySelectorAll('*')],rm=[],jobs=[],cp=o=>{const c=w.getComputedStyle(o);let t='';for(let i=0;i<c.length;i++)t+=c[i]+':'+c.getPropertyValue(c[i])+';';return t};
- for(let i=0;i<O.length;i++){const o=O[i],k=K[i],tg=o.tagName;if(!k)continue;
-  if(/^(SCRIPT|STYLE|LINK|NOSCRIPT|TEMPLATE|IFRAME|OBJECT|EMBED|META|TITLE|BASE)$/i.test(tg)){rm.push(k);continue}
-  const t=cp(o);
-  if(tg=='CANVAS'){const im=d.createElement('img');try{im.src=o.toDataURL('image/png')}catch{}im.setAttribute('style',t);const r=o.getBoundingClientRect();im.style.width=r.width+'px';im.style.height=r.height+'px';k.replaceWith(im);continue}
-  k.setAttribute('style',t);
-  if(tg=='IMG'){const u=o.currentSrc||o.src;if(u&&!u.startsWith('data:'))jobs.push(du(u).then(v=>{k.setAttribute('src',v);k.removeAttribute('srcset')}))}
-  if(tg=='VIDEO'){try{const c=d.createElement('canvas');c.width=o.videoWidth;c.height=o.videoHeight;c.getContext('2d').drawImage(o,0,0);const im=d.createElement('img');im.src=c.toDataURL();im.setAttribute('style',t);k.replaceWith(im)}catch{}}
-  const bg=w.getComputedStyle(o).backgroundImage;if(bg&&bg!='none'&&/url\(/.test(bg)){jobs.push((async()=>{let v=bg;for(const m of[...bg.matchAll(/url\(["']?([^"')]+)["']?\)/g)])if(!m[1].startsWith('data:'))v=v.replace(m[0],'url("'+await du(m[1])+'")');k.style.backgroundImage=v})())}
-  if(tg=='INPUT'||tg=='TEXTAREA'){k.setAttribute('value',o.value);if(tg=='TEXTAREA')k.textContent=o.value}}
- // fonts
- let ff='';const fj=[];for(const sh of d.styleSheets){let rs;try{rs=sh.cssRules}catch{continue}for(const r of rs)if(r.type==5&&r.style.getPropertyValue('src')){fj.push((async()=>{let src=r.style.getPropertyValue('src');for(const m of[...src.matchAll(/url\(["']?([^"')]+)["']?\)/g)])if(!m[1].startsWith('data:'))src=src.replace(m[0],'url("'+await du(new URL(m[1],sh.href||d.baseURI).href)+'")');ff+='@font-face{font-family:'+r.style.getPropertyValue('font-family')+';font-weight:'+(r.style.getPropertyValue('font-weight')||'normal')+';font-style:'+(r.style.getPropertyValue('font-style')||'normal')+';src:'+src+'}'})())}}
- await Promise.all([...jobs,...fj]);rm.forEach(e=>e.remove());
- const hd=R.querySelector('head')||R.insertBefore(d.createElement('head'),R.firstChild);const st=d.createElement('style');st.textContent=ff;hd.appendChild(st);
- R.style.width=W+'px';R.style.height=H+'px';R.style.overflow='hidden';
- const x=new XMLSerializer().serializeToString(R),svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'"><foreignObject x="0" y="0" width="100%" height="100%">'+x+'</foreignObject></svg>';
- const im=new Image;im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);await im.decode();
- const k=Math.min(2,Math.max(1,w.devicePixelRatio||1)),o=document.createElement('canvas');o.width=Math.round(W*k);o.height=Math.round(H*k);const c=o.getContext('2d');c.fillStyle='#000';c.fillRect(0,0,o.width,o.height);c.drawImage(im,0,0,o.width,o.height);
- return o.toDataURL('image/png')}catch(e){console.warn('domShot',e);return''}}
-async function shot(){toast('Capturing…');let u=hasUI()?await domShot():comp();if(!u)u=comp();if(!u){toast('Pick this tab in the prompt to capture the game');u=await grab()}if(!u)return toast('Screenshot failed or was cancelled');const a=document.createElement('a');a.href=u;a.download=CUR+'.png';a.click()}
+async function shot(){let u='';if(!hasUI())u=comp();if(!u){toast('Pick this tab in the prompt to capture everything (title, UI, layers)');u=await grab();if(!u)u=comp()}if(!u)return toast('Screenshot failed or was cancelled');const a=document.createElement('a');a.href=u;a.download=CUR+'.png';a.click()}
 /* ---------- Editor (GitHub-style) ---------- */
 const blank=()=>({id:'',title:'',tagline:'',desc:'',dev:'Alligator Games',cr:['alligator-games'],status:'released',date:'',price:'Free',tags:[],color:'#3ddc84',cover:'',shots:[],license:'',featured:false,src:{type:'bundle',entry:'',name:'',url:''}});
 let E={m:blank(),files:[],found:[],sec:'general',handle:null,idt:0};
