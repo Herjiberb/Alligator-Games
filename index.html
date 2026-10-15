@@ -121,6 +121,53 @@ details>summary::after{content:'';width:8px;height:8px;border-right:2px solid va
 .sb a{display:flex;gap:8px;padding:6px 12px;border-radius:6px;cursor:pointer;position:relative}
 .sb a:hover{background:#151b23}.sb a.on{background:#212830}.sb a.on:before{content:"";position:absolute;left:-14px;top:6px;bottom:6px;width:4px;border-radius:4px;background:#1f6feb}
 .sb h4{font-size:12px;font-weight:600;padding:12px 12px 4px;border-top:1px solid #21262d;margin-top:8px}
+
+/* ---- v3 mobile: editor + app ---- */
+:root{--eh:56px}
+.gh{min-height:100vh;min-height:100dvh}
+#gf{max-width:100%;border:0}
+body:has(#modal .msh){overflow:hidden}
+#modal .msh{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.gh :is(input,textarea,select){scroll-margin-top:calc(var(--eh) + 64px);scroll-margin-bottom:110px}
+.gh textarea{min-height:96px;resize:vertical}
+.gh input[type=checkbox],.gh input[type=radio]{width:18px;height:18px;accent-color:#1f6feb;flex:none}
+@media(max-width:860px){
+ /* sticky editor header (was sticky with no top/background, so it never stuck) */
+ .gh .edh{top:0;z-index:20;background:#0d1117;border-bottom:1px solid #21262d}
+ /* section tabs: smooth swipe, snap, edge fade hints */
+ .gh .edw nav.sb{scroll-snap-type:x proximity;scrollbar-width:none;gap:6px;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+ .gh .edw nav.sb a{scroll-snap-align:center;margin:0;border-radius:99px}
+ .gh .edw nav.sb a.on{box-shadow:0 0 0 3px #1f6feb33}
+ .gh main{padding-left:0;padding-right:0}
+ .gh label.l{font-size:13px}
+ .gh .d{font-size:12px;line-height:1.4}
+ .gh main .flex>.gb,.gh main .grid .gb{flex:1 1 auto;text-align:center}
+ .gh input[type=date]{min-height:40px}
+ .gh pre,.gh code{font-size:12px}
+}
+@media(max-width:480px){
+ .gh h2{font-size:18px}
+ .gh main .grid.grid-cols-2{gap:8px!important}
+ .gh .gb{min-height:40px;display:inline-flex;align-items:center;justify-content:center}
+}
+@media(pointer:coarse){
+ .btn{min-height:44px;justify-content:center}
+ .chip{padding:.4rem .9rem;font-size:13px}
+ .gh .gb,.gh .sb a{min-height:40px;align-items:center}
+ .gh .gb:active,.gh .sb a:active{background:#2a313c;transform:scale(.97)}
+ input,textarea,select{font-size:max(16px,1em)}
+}
+@media(max-width:767px){
+ .bn{left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right))}
+ .pbar{left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right))}
+ .bn a{min-height:48px;justify-content:center}
+ #modal .msh :is(input,textarea,select){font-size:16px}
+}
+@media(max-height:480px) and (orientation:landscape) and (max-width:900px){
+ .bn{padding:3px;border-radius:16px}.bn a{flex-direction:row;justify-content:center;gap:6px;padding:4px 0;min-height:36px}.bn a svg{width:18px;height:18px}
+ .pbar{bottom:calc(60px + env(safe-area-inset-bottom))}
+ #hero{height:300px!important}
+}
 </style></head><body><div id="app"></div><div id="toast"></div><div id="modal"></div>
 <script>
 let EDOK=false;localStorage.removeItem('ag_ed');
@@ -139,14 +186,20 @@ async function favSync(){if(!$('#gf'))return;const m=FM(),g=m=='app'?'':gfav(),k
  const im=await li(g);if(!im)return setFav(FURL);const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.drawImage(im,0,0,64,64);
  if(m=='dual'){const lg=await li(FURL);x.beginPath();x.arc(47,47,18,0,7);x.fillStyle='#0b0b0b';x.fill();x.save();x.beginPath();x.arc(47,47,16,0,7);x.clip();if(lg)x.drawImage(lg,31,31,32,32);x.restore()}
  setFav(c.toDataURL('image/png'))}
-function focusGame(first){const f=$('#gf');if(!f)return;try{f.focus();const w=f.contentWindow;w.focus();const d=w.document,c=[...d.querySelectorAll('canvas')].sort((a,b)=>b.width*b.height-a.width*a.height);if(c&&(first||d.activeElement===d.body||!d.activeElement)){if(!c.hasAttribute('tabindex')){c.tabIndex=0;c.style.outline='none'}c.focus({preventScroll:true})}}catch{}
+function focusGame(first){const f=$('#gf');if(!f)return;try{f.focus();const w=f.contentWindow;w.focus();const d=w.document,c=[...d.querySelectorAll('canvas')].sort((a,b)=>b.width*b.height-a.width*a.height)[0];if(c&&(first||d.activeElement===d.body||!d.activeElement)){if(!c.hasAttribute('tabindex')){c.tabIndex=0;c.style.outline='none'}c.focus({preventScroll:true})}}catch{}
  if(first===1)[300,1000,2500].forEach(t=>setTimeout(()=>focusGame(2),t))}
 document.addEventListener('mousedown',e=>{if(e.target.closest?.('#bar button'))e.preventDefault()});
 addEventListener('focus',()=>{if($('#gf'))focusGame()});
 const sv=(c,d)=>`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-document.addEventListener('fullscreenchange',()=>{const b=$('[data-a=fs]');if(b){b.classList.toggle('on',!!document.fullscreenElement);b.title=document.fullscreenElement?'Exit fullscreen':'Fullsc'});
+document.addEventListener('fullscreenchange',()=>{const b=$('[data-a=fs]');if(b){b.classList.toggle('on',!!document.fullscreenElement);b.title=document.fullscreenElement?'Exit fullscreen':'Fullscreen'}});
 const XI=sv('#ff7b72','<path d="M6 6l12 12M18 6L6 18"/>'),IC_SND=sv('#7ee787','<path d="M4 9v6h4l5 4V5L8 9z" fill="#7ee78744"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>'),IC_MUT=sv('#7ee787','<path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" stroke="#7ee787"/>');
 // ... rest of script unchanged (trimmed in this commit for brevity) ...
 
+
+// mobile: keep --eh (sticky editor header height) accurate, and keep focused fields visible above the keyboard
+(function(){let q=0;const set=()=>{q=0;const e=$('.gh .edh');if(e)document.documentElement.style.setProperty('--eh',e.offsetHeight+'px')},sch=()=>{if(!q)q=requestAnimationFrame(set)};
+ addEventListener('resize',sch);addEventListener('orientationchange',sch);if(app)new MutationObserver(sch).observe(app,{childList:true,subtree:true});sch();
+ addEventListener('focusin',e=>{const t=e.target;if(t.matches&&t.matches('.gh input,.gh textarea,.gh select')&&matchMedia('(max-width:860px)').matches)setTimeout(()=>{try{t.scrollIntoView({block:'center',behavior:'smooth'})}catch{}},320)});
+})();
 (function(){if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update());})();
 </script></body></html>
