@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0f1412"><title>Alligator Games</title>
-<link rel="icon" id="fav"><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" id="fav" type="image/png" href="data:image/png;base64,iVBORw0KGgo="><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 :root{--bg:#0f1412;--pn:#19201d;--p2:#222b27;--ln:#2d3934;--ac:#3ddc84;--tx:#e8efe9;--mu:#93a39a}
@@ -178,7 +178,7 @@ const h=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 const slug=s=>(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 const fd=d=>d?new Date(d+'T00:00').toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'TBA';
 const LOGO=`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%"><circle cx="50" cy="50" r="49" fill="#0b0b0b"/><circle cx="50" cy="50" r="46" fill="none" stroke="#3ddc84" stroke-width="4"/></svg>`;
-const FURL='data:image/svg+xml,'+encodeURIComponent(LOGO.replace('<svg ','<svg width="100" height="100" '));$('#fav').href=FURL;
+const FURL=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='#0b0b0b';x.beginPath();x.arc(32,32,31,0,7);x.fill();x.strokeStyle='#3ddc84';x.lineWidth=5;x.beginPath();x.arc(32,32,27,0,7);x.stroke();x.fillStyle='#3ddc84';x.beginPath();x.arc(32,32,9,0,7);x.fill();return c.toDataURL('image/png')})();$('#fav').type='image/png';$('#fav').href=FURL;
 const FM=()=>localStorage.favmode||'app',setFav=u=>{$('#fav').href=u};let FT=0,LF='';
 const li=s=>new Promise(ok=>{const i=new Image;i.onload=()=>ok(i);i.onerror=()=>ok(null);i.src=s});
 function gfav(){try{const d=$('#gf').contentDocument,l=[...d.querySelectorAll('link[rel~=icon]')].pop();return l&&l.getAttribute('href')?l.href:''}catch{return''}}
@@ -193,7 +193,90 @@ addEventListener('focus',()=>{if($('#gf'))focusGame()});
 const sv=(c,d)=>`<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 document.addEventListener('fullscreenchange',()=>{const b=$('[data-a=fs]');if(b){b.classList.toggle('on',!!document.fullscreenElement);b.title=document.fullscreenElement?'Exit fullscreen':'Fullscreen'}});
 const XI=sv('#ff7b72','<path d="M6 6l12 12M18 6L6 18"/>'),IC_SND=sv('#7ee787','<path d="M4 9v6h4l5 4V5L8 9z" fill="#7ee78744"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>'),IC_MUT=sv('#7ee787','<path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" stroke="#7ee787"/>');
-// ... rest of script unchanged (trimmed in this commit for brevity) ...
+// ===== App (rebuilt): library, player, editor =====
+const gs=()=>{try{return JSON.parse(localStorage.ag_games||'[]')}catch{return[]}},ss=a=>localStorage.ag_games=JSON.stringify(a);
+const fv=()=>{try{return JSON.parse(localStorage.ag_fav||'[]')}catch{return[]}};
+const toast=m=>{const t=$('#toast');t.innerHTML=`<div class="pn fade" style="position:fixed;left:50%;translate:-50% 0;bottom:calc(96px + env(safe-area-inset-bottom));z-index:90;padding:10px 16px;max-width:90vw">${h(m)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>t.innerHTML='',2400)};
+const MT={html:'text/html; charset=utf-8',htm:'text/html; charset=utf-8',js:'text/javascript',mjs:'text/javascript',css:'text/css',json:'application/json',wasm:'application/wasm',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',svg:'image/svg+xml',webp:'image/webp',mp3:'audio/mpeg',ogg:'audio/ogg',wav:'audio/wav',mp4:'video/mp4',woff2:'font/woff2',woff:'font/woff',ttf:'font/ttf',txt:'text/plain'};
+const enc=p=>p.split('/').map(encodeURIComponent).join('/'),gurl=(id,p)=>new URL('__g/'+encodeURIComponent(id)+'/'+enc(p),location.href).href;
+const rs=f=>new Promise(ok=>{const u=URL.createObjectURL(f);li(u).then(i=>{if(!i)return ok('');const s=Math.min(1,640/i.width),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.8))})});
+const thumb=g=>g.thumb?`<img src="${h(g.thumb)}" class="w-full h-full object-cover" loading="lazy" alt="">`:`<div class="w-full h-full grid place-items-center dp text-5xl" style="background:linear-gradient(135deg,#1d3a2b,#16222d);color:var(--ac)">${h((g.title||'?')[0].toUpperCase())}</div>`;
+const card=g=>`<a href="#/g/${h(g.id)}" class="card pn block overflow-hidden"><div class="aspect-video overflow-hidden">${thumb(g)}</div><div class="p-3"><div class="font-semibold truncate">${h(g.title)}</div><div class="text-xs" style="color:var(--mu)">${h(g.cat||'Casual')}</div></div></a>`;
+const NAV=[['#/','Home','<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],['#/fav','Favorites','<path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z"/>'],['#/edit','Editor','<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>']];
+const hdr=r=>`<header class="sticky top-0 z-30" style="background:#0f1412cc;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--ln);padding-top:env(safe-area-inset-top)"><div class="max-w-6xl mx-auto px-5 py-3 flex items-center gap-3"><span style="width:28px;height:28px">${LOGO}</span><div class="dp text-xl font-extrabold gt">Alligator Games</div><div class="flex-1"></div><nav class="hidden md:flex gap-2">${NAV.map(([k,l])=>`<a href="${k}" class="btn ${r==k?'ac':''}">${l}</a>`).join('')}</nav></div></header>`;
+const bn=r=>`<nav class="bn pn">${NAV.map(([k,l,d])=>`<a href="${k}" class="${r==k?'on':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>${l}</a>`).join('')}</nav>`;
+let Q='',C='';
+function home(r){
+ const fav=r=='#/fav',all=gs(),f=fv(),top=all[0];
+ app.innerHTML=hdr(r)+`<main class="fade max-w-6xl mx-auto px-5 pt-4 pb-32">`+
+ (!fav&&top?`<a id="hero" href="#/g/${h(top.id)}" class="pn block relative overflow-hidden mb-5" style="height:320px"><div class="hs absolute inset-0"><div class="absolute inset-0">${thumb(top)}</div><div class="absolute inset-0" style="background:linear-gradient(0deg,#0f1412,#0f141255 60%,transparent)"></div><div class="absolute bottom-0 left-0 right-0 p-8"><div class="text-xs mb-1" style="color:var(--ac)">LATEST</div><h1 class="dp text-4xl font-extrabold">${h(top.title)}</h1><p class="mt-1 line-clamp-2" style="color:var(--mu)">${h(top.desc)}</p><span class="btn ac mt-3">▶ Play</span></div></div></a>`:'')+
+ `<h1 class="dp text-2xl font-extrabold mb-3">${fav?'Favorites':'All games'}</h1><input id="q" type="search" placeholder="Search games…" value="${h(Q)}" class="w-full mb-3 px-4 py-2 rounded-xl" style="background:var(--pn);border:1px solid var(--ln);color:var(--tx)"><div id="ch" class="flex flex-wrap gap-2 mb-4">${['',...CATS].map(c=>`<span class="chip ${C==c?'on':''}" data-c="${h(c)}">${c||'All'}</span>`).join('')}</div><div id="grid"></div></main>`+bn(r);
+ const draw=()=>{const l=all.filter(g=>(!fav||f.includes(g.id))&&(!C||g.cat==C)&&(!Q||g.title.toLowerCase().includes(Q.toLowerCase())));
+  $('#grid').className=l.length?'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4':'';
+  $('#grid').innerHTML=l.length?l.map(card).join(''):`<div class="pn p-8 text-center" style="color:var(--mu)">${all.length?'No games match.':'No games yet. Open the Editor to add one.'}</div>`};
+ draw();$('#q').oninput=e=>{Q=e.target.value;draw()};
+ $$('#ch .chip').forEach(c=>c.onclick=()=>{C=c.dataset.c;$$('#ch .chip').forEach(x=>x.classList.toggle('on',x==c));draw()});
+}
+const SPD=[1,1.5,2,.5];let SI=0;
+function play(id){
+ const g=gs().find(x=>x.id==id);if(!g){location.hash='#/';return}
+ const heart=()=>fv().includes(id)?'♥':'♡';
+ app.innerHTML=`<div id="stage" style="position:fixed;inset:0;background:#000"><iframe id="gf" title="${h(g.title)}" allow="autoplay;fullscreen;gamepad;clipboard-write" style="width:100%;height:100%;border:0"></iframe></div>
+ <div id="bar" class="pn" style="position:fixed;z-index:50;top:calc(10px + env(safe-area-inset-top));right:10px;display:flex;align-items:center;gap:6px;padding:6px"><div class="bt" style="display:flex;gap:6px;align-items:center"><button data-a="back" title="Back">‹</button><button data-a="mute" title="Mute">🔊</button><button data-a="pause" title="Pause">⏸</button><button data-a="spd" class="c2 chip">×1</button><button data-a="heart" class="heart" title="Favorite">${heart()}</button><button data-a="fs" title="Fullscreen">⛶</button></div><button data-a="min" title="Hide controls">•••</button></div>`;
+ if(!('serviceWorker'in navigator)){toast('Service workers are required to run games');return}
+ navigator.serviceWorker.ready.then(()=>{const f=$('#gf');if(!f)return;f.onload=()=>{focusGame(1);favSync()};f.src=gurl(id,g.entry||'index.html')});
+}
+app.addEventListener('click',async e=>{
+ const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,ag=()=>{try{return $('#gf').contentWindow.__ag}catch{}};
+ if(a=='back')return history.length>1?history.back():location.hash='#/';
+ if(a=='min')return $('#bar').classList.toggle('min');
+ if(a=='mute'){const x=ag();if(!x)return;x.setMute(!x.mute);localStorage.agmute=x.mute?'1':'0';b.textContent=x.mute?'🔇':'🔊'}
+ if(a=='pause'){const x=ag();if(!x)return;x.setPause(!x.paused);b.textContent=x.paused?'▶':'⏸'}
+ if(a=='spd'){const x=ag();if(!x)return;SI=(SI+1)%SPD.length;x.setSpeed(SPD[SI]);b.textContent='×'+SPD[SI]}
+ if(a=='heart'){const id=location.hash.split('/')[2],f=fv(),i=f.indexOf(id);i<0?f.push(id):f.splice(i,1);localStorage.ag_fav=JSON.stringify(f);b.textContent=i<0?'♥':'♡';b.classList.toggle('on',i<0)}
+ if(a=='fs'){document.fullscreenElement?document.exitFullscreen():$('#stage').requestFullscreen?.().catch(()=>{});setTimeout(()=>focusGame(1),200)}
+ // editor
+ if(a=='pw')return pwGo();
+ if(a=='sec'){ES.s=b.dataset.s;if(ES.s=='form'&&!b.dataset.keep)ES.e=null;return edit()}
+ if(a=='new'){ES.s='form';ES.e=null;return edit()}
+ if(a=='ed'){ES.s='form';ES.e=b.dataset.id;return edit()}
+ if(a=='del'){if(!confirm('Delete this game and its files?'))return;const id=b.dataset.id;ss(gs().filter(g=>g.id!=id));await caches.delete('g-'+id);for(const k of Object.keys(localStorage))if(k.startsWith('g:'+id+':'))localStorage.removeItem(k);toast('Deleted');return edit()}
+ if(a=='save')return save();
+});
+const ES={s:'list',e:null};
+const pwGo=()=>{if($('#pw').value==PW){EDOK=true;edit()}else toast('Wrong password')};
+function edit(){
+ if(!EDOK){app.innerHTML=hdr('#/edit')+`<main class="fade max-w-sm mx-auto px-5 pt-16 pb-32"><div class="pn p-6"><h1 class="dp text-2xl font-extrabold mb-1">Editor</h1><p class="mb-4" style="color:var(--mu)">Enter the password to continue.</p><input id="pw" type="password" autocomplete="current-password" class="w-full px-4 py-2 rounded-xl mb-3" style="background:var(--p2);border:1px solid var(--ln);color:var(--tx);font-size:16px"><button data-a="pw" class="btn ac w-full">Unlock</button></div></main>`+bn('#/edit');$('#pw').onkeydown=e=>e.key=='Enter'&&pwGo();return}
+ const sec=(s,l)=>`<a data-a="sec" data-s="${s}" data-keep="${ES.e?1:''}" class="${ES.s==s?'on':''}">${l}</a>`;
+ app.innerHTML=`<div class="gh"><header class="edh sticky top-0 z-20 flex items-center gap-2 px-4 py-2" style="background:#161b22;border-bottom:1px solid #30363d"><a class="gb" href="#/">‹ Back</a><div class="tt font-semibold">Game editor</div><div class="flex-1"></div><button class="gb p" data-a="new">+ New game</button></header><div class="edw flex gap-6 max-w-5xl mx-auto p-4"><nav class="sb w-52 shrink-0" style="position:sticky;top:70px;align-self:flex-start"><h4>Library</h4>${sec('list','Games')}${sec('form',ES.e?'Edit game':'Add game')}</nav><main class="flex-1 fade" id="em"></main></div></div>`+bn('#/edit');
+ const em=$('#em');
+ if(ES.s=='list'){const l=gs();em.innerHTML=`<h2>Games (${l.length})</h2>`+(l.map(g=>`<div class="rowg flex items-center gap-3 py-3" style="border-bottom:1px solid #21262d"><div class="min-w-0 flex-1"><b class="block truncate">${h(g.title)}</b><div class="d">${h(g.cat||'')} · ${fd(g.date)}</div></div><div class="rb flex gap-2"><button class="gb" data-a="ed" data-id="${h(g.id)}">Edit</button><a class="gb" href="#/g/${h(g.id)}">Play</a><button class="gb r" data-a="del" data-id="${h(g.id)}">Delete</button></div></div>`).join('')||'<p class="d">No games yet. Tap “+ New game”.</p>');return}
+ const g=gs().find(x=>x.id==ES.e)||{};
+ em.innerHTML=`<h2>${g.id?'Edit game':'Add game'}</h2><div class="grid gap-4"><div><label class="l">Title</label><input type="text" id="f_t" value="${h(g.title)}"></div><div class="grid grid-cols-2 gap-3"><div><label class="l">Category</label><select id="f_c">${CATS.map(c=>`<option ${g.cat==c?'selected':''}>${c}</option>`).join('')}</select></div><div><label class="l">Release date</label><input type="date" id="f_d" value="${h(g.date)}"></div></div><div><label class="l">Description</label><textarea id="f_s" rows="3">${h(g.desc)}</textarea></div><div><label class="l">Thumbnail</label><input type="file" id="f_i" accept="image/*"><div class="d mt-1">${g.thumb?'Leave empty to keep the current image.':'Optional.'}</div></div><div><label class="l">Game folder</label><input type="file" id="f_f" webkitdirectory multiple><div class="d mt-1">Pick the folder containing index.html.</div></div><div><label class="l">…or a single HTML file</label><input type="file" id="f_h" accept=".html,.htm"></div><div class="flex gap-2"><button class="gb p" data-a="save">Save game</button><button class="gb" data-a="sec" data-s="list">Cancel</button></div></div>`;
+}
+async function save(){
+ const t=$('#f_t').value.trim();if(!t)return toast('Title is required');
+ const all=gs(),old=all.find(x=>x.id==ES.e),id=old?old.id:slug(t)+'-'+Math.random().toString(36).slice(2,6);
+ const g={...(old||{}),id,title:t,cat:$('#f_c').value,date:$('#f_d').value,desc:$('#f_s').value.trim()};
+ const im=$('#f_i').files[0];if(im)g.thumb=await rs(im);
+ let files=[...$('#f_f').files].map(f=>[f.webkitRelativePath.split('/').slice(1).join('/')||f.name,f]);const one=$('#f_h').files[0];
+ if(!files.length&&one)files=[['index.html',one]];
+ if(files.length){
+  const hs=files.map(x=>x[0]).filter(p=>/\.html?$/i.test(p)).sort((a,b)=>(a.split('/').length-b.split('/').length)||a.localeCompare(b));
+  g.entry=hs.includes('index.html')?'index.html':hs[0];if(!g.entry)return toast('No HTML file found in that selection');
+  await caches.delete('g-'+id);const c=await caches.open('g-'+id);let n=0;
+  for(const [p,f] of files){const x=p.split('.').pop().toLowerCase();await c.put(gurl(id,p),new Response(f,{headers:{'Content-Type':f.type&&x!='html'?f.type:MT[x]||f.type||'application/octet-stream'}}));if(++n%25==0)toast(`Saving ${n}/${files.length}…`)}
+ }else if(!old)return toast('Add a game folder or HTML file');
+ old?all[all.indexOf(old)]=g:all.unshift(g);ss(all);ES.s='list';ES.e=null;toast('Saved');edit();
+}
+function route(){
+ const r=location.hash.slice(1)||'/',p=r.split('/');scrollTo(0,0);document.title='Alligator Games';
+ if(p[1]=='g')return play(decodeURIComponent(p[2]||''));
+ if(p[1]=='edit'){ES.s=ES.s||'list';return edit()}
+ home(p[1]=='fav'?'#/fav':'#/');
+}
+addEventListener('hashchange',route);setInterval(favSync,2000);route();
+
 
 
 // mobile: keep --eh (sticky editor header height) accurate, and keep focused fields visible above the keyboard
