@@ -8,7 +8,7 @@ self.addEventListener('fetch', e => {
 // Injected into every game HTML page. Adds window.__ag: volume/mute, pause, game speed, auto-click and a frame counter.
 function inject() {
   if (window.__ag) return;
-  const ag = window.__ag = { mute: false, vol: 1, speed: 1, paused: false, frames: 0, gains: new Map(), els: new Set(), om: new Map(), pe: new Set(), held: [], mx: null, my: null };
+  const ag = window.__ag = { mute: false, vol: 1, speed: 1, paused: false, frames: 0, gains: new Map(), ans: new Map(), hap: 0, rv: navigator.vibrate ? navigator.vibrate.bind(navigator) : null, ht: 0, els: new Set(), om: new Map(), pe: new Set(), held: [], mx: null, my: null };
   try { ag.mute = parent.localStorage.agmute == '1'; ag.vol = (JSON.parse(parent.localStorage.agopts || '{}').vol ?? 100) / 100 } catch { }
   const orig = { now: performance.now.bind(performance), dnow: Date.now.bind(Date), st: window.setTimeout.bind(window), si: window.setInterval.bind(window) };
   // virtual clock (only installed when speed != 1 or the game is paused)
@@ -29,7 +29,11 @@ function inject() {
     if (typeof AudioDestinationNode != 'undefined' && d instanceof AudioDestinationNode) {
       const c = this.context; let g = ag.gains.get(c);
       if (!g) { g = c.createGain(); g.gain.value = ag.mute ? 0 : ag.vol; oc.call(g, d); ag.gains.set(c, g) }
-      if (this !== g) { oc.call(this, g, ...a); return d }
+      if (this !== g) {
+        let an = ag.ans.get(c); if (!an) { an = c.createAnalyser(); an.fftSize = 512; ag.ans.set(c, an) }
+        oc.call(this, an); // tap pre-volume so haptics follow the game's own loudness
+        oc.call(this, g, ...a); return d
+      }
     }
     return oc.call(this, d, ...a);
   };
@@ -58,6 +62,19 @@ function inject() {
       ag.pe.forEach(e => e.play().catch(() => { })); ag.pe.clear();
       ag.held.splice(0).forEach(cb => window.requestAnimationFrame(cb));
     }
+  };
+  // Audio haptics: replaces the game's own vibration; strength follows loudness via duty-cycled pulses.
+  if (ag.rv) navigator.vibrate = p => ag.hap ? true : ag.rv(p);
+  ag.setHaptic = on => {
+    on = !!on; if (on === ag.hap && (ag.ht || !on)) return; ag.hap = on; clearInterval(ag.ht); ag.ht = 0;
+    if (!on) { ag.rv && ag.rv(0); return }
+    const buf = new Float32Array(512), T = 50;
+    ag.ht = orig.si(() => {
+      if (ag.paused || document.hidden) return;
+      let pk = 0; ag.ans.forEach(an => { an.getFloatTimeDomainData(buf); let s = 0; for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i]; pk = Math.max(pk, Math.sqrt(s / buf.length)) });
+      const lv = Math.min(1, Math.sqrt(pk) * 1.6); // 0 = silent, 1 = max
+      if (lv < 0.04) ag.rv(0); else ag.rv(Math.max(4, Math.round(T * lv)));
+    }, T);
   };
   let ai = 0;
   ag.setAuto = n => {
@@ -151,4 +168,4 @@ async function serve(u, id, p) {
     if (r) return new Response(r.b, { headers: { 'Content-Type': r.t, 'Cache-Control': 'no-store' } });
   }
   return new Response('Not found: ' + p, { status: 404 });
-}
+    }
