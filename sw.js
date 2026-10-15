@@ -30,7 +30,7 @@ function inject() {
       const c = this.context; let g = ag.gains.get(c);
       if (!g) { g = c.createGain(); g.gain.value = ag.mute ? 0 : ag.vol; oc.call(g, d); ag.gains.set(c, g) }
       if (this !== g) {
-        let an = ag.ans.get(c); if (!an) { an = c.createAnalyser(); an.fftSize = 512; ag.ans.set(c, an) }
+        let an = ag.ans.get(c); if (!an) { an = c.createAnalyser(); an.fftSize = 512; const z = c.createGain(); z.gain.value = 0; oc.call(an, z); oc.call(z, c.destination); ag.ans.set(c, an) }
         oc.call(this, an); // tap pre-volume so haptics follow the game's own loudness
         oc.call(this, g, ...a); return d
       }
@@ -168,4 +168,4 @@ async function serve(u, id, p) {
     if (r) return new Response(r.b, { headers: { 'Content-Type': r.t, 'Cache-Control': 'no-store' } });
   }
   return new Response('Not found: ' + p, { status: 404 });
-    }
+}
