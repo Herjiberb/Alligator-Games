@@ -1,9 +1,21 @@
 // Alligator Games – virtual file server for games at /__g/<gameId>/<path>
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+// App shell: index, sw and the few CDN assets are cached so the store opens fully offline (games come from the offline library).
+const SHELL = 'ag-shell-v1', CDN = ['cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+const PRE = ['./', 'index.html', 'catalog.txt', 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap'];
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(caches.open(SHELL).then(c => Promise.all(PRE.map(u => fetch(u, { cache: 'reload', mode: u.startsWith('http') ? 'no-cors' : 'same-origin' }).then(r => (r.ok || r.type == 'opaque') && c.put(u, r)).catch(() => { })))));
+});
+self.addEventListener('activate', e => e.waitUntil(Promise.all([clients.claim(), caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('ag-shell-') && k != SHELL).map(k => caches.delete(k))))])));
+async function shellFetch(rq) {
+  const c = await caches.open(SHELL);
+  try { const r = await fetch(rq); if (r && (r.ok || r.type == 'opaque')) c.put(rq, r.clone()); return r }
+  catch { return (await c.match(rq, { ignoreSearch: rq.mode == 'navigate' })) || (rq.mode == 'navigate' && ((await c.match('index.html')) || (await c.match('./')))) || Response.error() }
+}
 self.addEventListener('fetch', e => {
-  const u = new URL(e.request.url), m = u.pathname.match(/\/__g\/([^/]+)\/(.*)$/);
-  if (m) e.respondWith(serve(u, m[1], decodeURIComponent(m[2])).then(r => inj(r, e.request.destination)));
+  const q = e.request, u = new URL(q.url), m = u.pathname.match(/\/__g\/([^/]+)\/(.*)$/);
+  if (m) e.respondWith(serve(u, m[1], decodeURIComponent(m[2])).then(r => inj(r, q.destination)));
+  else if (q.method == 'GET' && !q.headers.has('range') && (u.origin == location.origin || CDN.includes(u.hostname))) e.respondWith(shellFetch(q));
 });
 // Injected into every game HTML page. Adds window.__ag: volume/mute, pause, game speed, auto-click and a frame counter.
 function inject() {
