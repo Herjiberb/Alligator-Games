@@ -551,7 +551,11 @@ const otx=async(s,m,f)=>{const d=await odb;return new Promise((ok,no)=>{const t=
 async function offKey(){let k=await otx('k','readonly',o=>o.get('main'));if(!k){k=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);await otx('k','readwrite',o=>o.put(k,'main'))}return k}
 async function offPut(g){const s=await dget('packs',g.id);if(!s)throw Error('No game data for '+g.title);if(!crypto.subtle)throw Error('Needs HTTPS or localhost');
  const k=await offKey(),iv=crypto.getRandomValues(new Uint8Array(12)),ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(JSON.stringify({m:g,s})));
- const rec={id:g.id,sig:String(g.sig),iv,ct,size:ct.byteLength,ts:Date.now()};await otx('g','readwrite',o=>o.put(rec,g.id));OFF.set(g.id,{sig:rec.sig,size:rec.size,ts:rec.ts})}
+ await offExt(s).catch(()=>{});const rec={id:g.id,sig:String(g.sig),iv,ct,size:ct.byteLength,ts:Date.now()};await otx('g','readwrite',o=>o.put(rec,g.id));OFF.set(g.id,{sig:rec.sig,size:rec.size,ts:rec.ts})}
+/* external libraries a game pulls from CDNs are cached too, so the game also starts offline */
+async function offExt(s){const{files}=await unpack(s),td=new TextDecoder(),seen=new Set(),ok=/\.(m?js|css|json|wasm|woff2?|ttf|png|jpe?g|gif|svg|webp|mp3|ogg|wav|mp4|webm|glb|bin)(\?|$)|(cdnjs|jsdelivr|unpkg|googleapis|gstatic|esm\.sh|skypack|cdn\.)/i;
+ for(const f of files)if(/\.(html?|m?js|css)$/i.test(f.p))for(const m of td.decode(f.b).matchAll(/https?:\/\/[^\s"'`<>()\\,;]+/g)){const u=m[0].replace(/[.]+$/,'');if(ok.test(u)&&!/w3\.org|schema\./.test(u))seen.add(u)}
+ const c=await caches.open('ag-ext');await Promise.all([...seen].slice(0,80).map(async u=>{try{if(await c.match(u))return;let r;try{r=await fetch(u,{mode:'cors'})}catch{r=await fetch(u,{mode:'no-cors'})}if(r.ok||r.type=='opaque')await c.put(u,r)}catch{}}))}
 async function offOpen(id){const r=await otx('g','readonly',o=>o.get(id));if(!r)return null;try{return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:r.iv},await offKey(),r.ct)))}catch{return null}}
 const offGet=async id=>(await offOpen(id))?.s;
 async function offDel(id){await otx('g','readwrite',o=>o.delete(id));OFF.delete(id)}
@@ -562,7 +566,7 @@ async function offRun(l,quiet){l=l.filter(g=>!OFFB.has(g.id));if(!l.length)retur
 async function offBoot(){try{for(const r of await otx('g','readonly',o=>o.getAll()))OFF.set(r.id,{sig:r.sig,size:r.size,ts:r.ts});
  let back=0;for(const id of[...OFF.keys()])if(!G.some(g=>g.id==id)){const o=await offOpen(id);if(o){await dset('games',id,o.m);if(o.m.src?.type=='bundle')await dset('packs',id,o.s);back++}}
  if(back)await load()}catch(e){console.error('offline boot',e)}
- if(OFFA()&&navigator.onLine)offRun(offList().filter(g=>['none','old'].includes(offSt(g))),1)}
+}
 /* ui */
 const offAgg=()=>{const l=offList(),c={none:0,ok:0,old:0};l.forEach(g=>{const s=offSt(g);if(s in c)c[s]++;else if(s=='busy')c.old++});return{l,c,sz:[...OFF.values()].reduce((a,x)=>a+x.size,0)}};
 const offHdr=()=>{const{l,c}=offAgg(),s=OFFB.size?'busy':c.old?'old':l.length&&c.ok==l.length?'ok':'none',n=c.old+c.none;
@@ -587,5 +591,11 @@ Object.assign(A,{
  offrm:async()=>{if(!confirm('Remove all offline copies? Games stay in the store.'))return;for(const id of[...OFF.keys()])await offDel(id);offRefresh()},
  offauto:(t)=>{localStorage.agoffauto=t.checked?'1':'0';if(t.checked&&navigator.onLine)offRun(offList().filter(g=>['none','old'].includes(offSt(g))),1)}});
 addEventListener('online',offRefresh);addEventListener('offline',offRefresh);
-(async()=>{if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update());await dropPH();await cat();await load();await offBoot();render()})();
+(async()=>{if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
+ await dropPH();await load();await offBoot();render();
+ // catalog refresh runs in the background so a missing/slow connection never blocks the app
+ const sig=()=>G.map(g=>g.id+g.sig+g.status).join();const b=sig();
+ try{if(navigator.onLine)await Promise.race([cat(),new Promise(r=>setTimeout(r,8000))]);await load();await offBoot()}catch{}
+ if(sig()!=b&&!/^#\/(play|editor)/.test(location.hash))render();else offRefresh();
+ if(OFFA()&&navigator.onLine)offRun(offList().filter(g=>['none','old'].includes(offSt(g))),1)})();
 </script></body></html>

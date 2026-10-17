@@ -1,21 +1,37 @@
 // Alligator Games – virtual file server for games at /__g/<gameId>/<path>
 // App shell: index, sw and the few CDN assets are cached so the store opens fully offline (games come from the offline library).
-const SHELL = 'ag-shell-v1', CDN = ['cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+const SHELL = 'ag-shell-v2', CDN = ['cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 const PRE = ['./', 'index.html', 'catalog.txt', 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap'];
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(SHELL).then(c => Promise.all(PRE.map(u => fetch(u, { cache: 'reload', mode: u.startsWith('http') ? 'no-cors' : 'same-origin' }).then(r => (r.ok || r.type == 'opaque') && c.put(u, r)).catch(() => { })))));
 });
 self.addEventListener('activate', e => e.waitUntil(Promise.all([clients.claim(), caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('ag-shell-') && k != SHELL).map(k => caches.delete(k))))])));
-async function shellFetch(rq) {
-  const c = await caches.open(SHELL);
-  try { const r = await fetch(rq); if (r && (r.ok || r.type == 'opaque')) c.put(rq, r.clone()); return r }
-  catch { return (await c.match(rq, { ignoreSearch: rq.mode == 'navigate' })) || (rq.mode == 'navigate' && ((await c.match('index.html')) || (await c.match('./')))) || Response.error() }
+const race = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(Error('timeout')), ms))]);
+// pages + catalog: network with a short timeout, then cache (so flaky wifi never hangs the app); everything else: cache first, refresh in background
+async function shellFetch(q) {
+  const c = await caches.open(SHELL), u = new URL(q.url), nav = q.mode == 'navigate', fresh = nav || /catalog/.test(u.pathname);
+  const hit = await c.match(q, { ignoreSearch: nav });
+  const net = fetch(q).then(r => { if (r && (r.ok || r.type == 'opaque')) c.put(q, r.clone()); return r }); net.catch(() => { });
+  if (fresh) { try { return await race(net, 3000) } catch { return hit || (nav && ((await c.match('index.html')) || (await c.match('./')))) || Response.error() } }
+  if (hit) return hit;
+  try { return await net } catch { return Response.error() }
+}
+// cross-origin files used by games (CDN libraries, fonts...): served from cache when present, stored when a game asks for them
+async function extFetch(e) {
+  const q = e.request, c = await caches.open('ag-ext'), hit = await c.match(q, { ignoreVary: true });
+  if (hit) { fetch(q).then(r => (r.ok || r.type == 'opaque') && c.put(q, r)).catch(() => { }); return hit }
+  let g = (q.referrer || '').includes('/__g/');
+  try { if (!g && e.clientId) g = ((await clients.get(e.clientId))?.url || '').includes('/__g/') } catch { }
+  try { const r = await fetch(q); if (g && (r.ok || r.type == 'opaque')) c.put(q, r.clone()); return r } catch { return Response.error() }
 }
 self.addEventListener('fetch', e => {
   const q = e.request, u = new URL(q.url), m = u.pathname.match(/\/__g\/([^/]+)\/(.*)$/);
   if (m) e.respondWith(serve(u, m[1], decodeURIComponent(m[2])).then(r => inj(r, q.destination)));
-  else if (q.method == 'GET' && !q.headers.has('range') && (u.origin == location.origin || CDN.includes(u.hostname))) e.respondWith(shellFetch(q));
+  else if (q.method != 'GET' || q.headers.has('range') || !/^https?:$/.test(u.protocol)) return;
+  else if (u.origin == location.origin) e.respondWith(shellFetch(q));
+  else if (CDN.includes(u.hostname)) e.respondWith(shellFetch(q));
+  else e.respondWith(extFetch(e));
 });
 // Injected into every game HTML page. Adds window.__ag: volume/mute, pause, game speed, auto-click and a frame counter.
 function inject() {
