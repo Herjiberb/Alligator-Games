@@ -1,0 +1,2970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>PLANTS VS. LAWN MOWERS</title>
+    <link href="Destroyer Tank Mower.png" rel="icon" type="image/x-icon"/>
+    <style>
+        /* Basic page setup */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            background: #000;
+        }
+
+        .screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* --- Start Screen --- */
+        #start-screen {
+            z-index: 10;
+            flex-direction: column;
+            background: radial-gradient(circle, #3a3a00, #1a1a00, #000);
+            animation: backgroundGlow 5s infinite alternate ease-in-out;
+        }
+
+        #logo {
+            width: 80%;
+            max-width: 600px;
+            animation: surgeBright 3s infinite alternate ease-in-out;
+        }
+
+        #play-button {
+            opacity: 0;
+            margin-top: 40px;
+            padding: 20px 40px;
+            font-size: 2.5em;
+            font-weight: bold;
+            color: white;
+            background: #2a8a2a;
+            border: 4px solid #1a5a1a;
+            border-radius: 15px;
+            cursor: pointer;
+            text-shadow: 2px 2px 4px #000;
+            box-shadow: 0 0 20px #00ff00;
+            transition: transform 0.2s, background 0.2s;
+            animation: buttonFadeIn 1.5s 1s ease-out forwards;
+        }
+
+        #play-button:hover {
+            transform: scale(1.1);
+            background: #3abf3a;
+        }
+
+        /* --- Game Screen --- */
+        #game-wrapper {
+            position: relative;
+        }
+
+        #game-container {
+            display: none;
+            z-index: 5;
+            background: #111;
+            flex-direction: row;
+            align-items: flex-start;
+        }
+
+        #game-canvas {
+            background: #000;
+            border-right: 5px solid #4a2a00;
+        }
+
+        /* UI Elements */
+        #game-ui {
+            padding: 20px;
+            width: 200px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        #top-bar {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #fff;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 0 0 10px #fff;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: flex-start;
+        }
+        
+        #top-bar span {
+             display: flex;
+             align-items: center;
+             gap: 8px;
+        }
+
+        #plant-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: calc(100vh - 400px);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        #plant-menu::-webkit-scrollbar { width: 8px; }
+        #plant-menu::-webkit-scrollbar-track { background: #222; border-radius: 4px; }
+        #plant-menu::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+        #plant-menu::-webkit-scrollbar-thumb:hover { background: #777; }
+
+        .plant-card {
+            background: #444;
+            border: 3px solid #888;
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .plant-card:hover { background: #555; border-color: #aaa; }
+        .plant-card.selected { background: #3a8a3a; border-color: #00ff00; box-shadow: 0 0 15px #00ff00; }
+        .plant-card img { width: 50px; height: 50px; margin-right: 10px; }
+        .plant-card .info { display: flex; flex-direction: column; }
+        .plant-card .name { font-weight: bold; }
+        .plant-card .cost { font-size: 1.1em; color: #ffd700; }
+
+        .ui-button {
+            padding: 15px; font-size: 1.5em; font-weight: bold; color: white;
+            border-radius: 10px; cursor: pointer; text-align: center; transition: background 0.2s, box-shadow 0.2s;
+        }
+
+        #uproot-button { background: #8B0000; border: 3px solid #6e0000; }
+        #uproot-button:hover { background: #B22222; }
+        #uproot-button.selected { background: #ff4d4d; border-color: #ffcccc; box-shadow: 0 0 15px #ff0000; }
+
+        #pause-button { background: #a0522d; border: 3px solid #8b4513; }
+        #pause-button:hover { background: #d2691e; }
+		
+		#2x-speed-button { background: #bdaa43; border: 3px solid #7d6f25; }
+        #2x-speed-button:hover { background: #9cac36; }
+		
+		#2x-speed-button.selected { 
+            background: #d4f044; 
+            border-color: #f0ffb5; 
+            box-shadow: 0 0 15px #f0ffb5; 
+        }
+
+        /* --- Shop Button --- */
+        #shop-button { 
+            background: #b533b5; 
+            border: 3px solid #7d257d; 
+            margin-top: 15px; /* Add some space */
+        }
+		
+        #shop-button:hover { background: #d64dd6; }
+
+        /* --- Ability Buttons --- */
+        .ability-button {
+            background: #2a5a8a;
+            border: 3px solid #1a3a5a;
+            font-size: 1.2em; /* Smaller font */
+            padding: 10px;
+            position: relative; /* For cooldown */
+            margin-top: 10px;
+        }
+        .ability-button:hover:not(:disabled) { background: #3a7ac2; }
+        .ability-button:disabled {
+            background: #444;
+            border-color: #333;
+            color: #888;
+            cursor: not-allowed;
+        }
+        .ability-button.selected {
+            background: #3a7ac2;
+            border-color: #89cff0;
+            box-shadow: 0 0 15px #89cff0;
+        }
+        .ability-cooldown {
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        /* --- Shop Modal --- */
+        .shop-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 500;
+            color: white;
+            font-family: 'Arial', sans-serif;
+        }
+        #shop-modal-content {
+            background: #2c2c2c;
+            border: 3px solid #ffd700;
+            border-radius: 15px;
+            padding: 25px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 0 30px #ffd700;
+            position: relative;
+        }
+        #shop-close-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2.5em;
+            color: white;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            line-height: 1;
+        }
+        #shop-close-button:hover { color: #ff0000; }
+
+        #shop-items {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .shop-item {
+            background: #444;
+            border: 2px solid #888;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        .shop-item h3 { margin-top: 0; color: #ffd700; }
+        .shop-buy-button {
+            padding: 10px 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: white;
+            background: #2a8a2a;
+            border: 2px solid #1a5a1a;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .shop-buy-button:hover { background: #3abf3a; }
+
+        /* Transaction Screen */
+        #shop-transaction-screen, #shop-complete-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        #shop-progress-bar-container {
+            width: 100%;
+            background-color: #555;
+            border: 1px solid #999;
+            border-radius: 5px;
+            height: 30px;
+            margin-top: 20px;
+            overflow: hidden; /* Ensure bar radius is clean */
+        }
+        #shop-progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #3abf3a;
+            border-radius: 5px;
+            transition: width 0.1s linear;
+        }
+        #shop-complete-ok-button {
+             background: #2a8a2a; 
+             border: 3px solid #1a5a1a; 
+             margin-top: 20px;
+        }
+        #shop-complete-ok-button:hover { background: #3abf3a; }
+        
+        #game-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            background: rgba(0, 0, 0, 0.7);
+            color: white; font-size: 60px; text-align: center; font-weight: bold;
+            text-shadow: 0 0 15px black; pointer-events: none;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: pre-wrap;
+        }
+
+        /* --- Context Menu Styling --- */
+        #plant-context-menu {
+            display: none;
+            position: absolute;
+            background-color: #2c2c2c;
+            border: 2px solid #888;
+            border-radius: 5px;
+            padding: 5px;
+            z-index: 200;
+            flex-direction: column;
+            gap: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
+        }
+        #plant-context-menu button {
+            background-color: #555;
+            border: 1px solid #777;
+            color: white;
+            padding: 8px 12px;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 3px;
+            width: 100%;
+            font-size: 14px;
+        }
+        #plant-context-menu button:hover:not(:disabled) {
+            background-color: #6a6a6a;
+            border-color: #999;
+        }
+        #plant-context-menu button:disabled {
+            background-color: #444;
+            color: #888;
+            cursor: not-allowed;
+            border-color: #666;
+        }
+
+        /* Keyframe Animations */
+        @keyframes backgroundGlow {
+            from { background: radial-gradient(circle, #3a3a00, #1a1a00, #000); }
+            to   { background: radial-gradient(circle, #8a8a33, #3a3a00, #000); }
+        }
+        @keyframes surgeBright {
+            0%   { filter: brightness(0.9) drop-shadow(0 0 10px #ffff00); }
+            50%  { filter: brightness(2.0) drop-shadow(0 0 35px #ffffaa); }
+            100% { filter: brightness(0.9) drop-shadow(0 0 10px #ffff00); }
+        }
+        @keyframes buttonFadeIn {
+            from { opacity: 0; transform: scale(0.5); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div id="start-screen" class="screen">
+        <img id="logo" src="PLANTS VS LAWN MOWERS.png" alt="PLANTS VS. LAWN MOWERS">
+        <button id="play-button">PLAY</button>
+		<button id="shop-button" class="ui-button">STORE ($)</button>
+    </div>
+
+    <div id="game-container" class="screen">
+        <div id="game-wrapper">
+            <canvas id="game-canvas"></canvas>
+            <div id="game-overlay"></div>
+        </div>
+        <div id="game-ui">
+            <div id="top-bar">
+                <span>$: <span id="currency-display">30</span></span>
+                <span><img src="Seeds.png" alt="Seeds" style="height: 24px; vertical-align: middle;"> <span id="seeds-display">0</span></span>
+                <span><img src="Boost.png" alt="Boosts" style="height: 24px; vertical-align: middle;"> <span id="boosts-display">0</span></span>
+                <span id="wave-display">Wave: 0/0</span>
+            </div>
+            <div id="plant-menu"></div>
+            <button id="uproot-button" class="ui-button">UPROOT</button>
+            <button id="pause-button" class="ui-button">PAUSE</button>
+			<button id="2x-speed-button" class="ui-button">2x SPEED</button>
+        </div>
+    </div>
+
+    <div id="plant-context-menu"></div>
+
+    <script>
+        // === GAME SETUP ===
+        window.addEventListener('load', init);
+
+        // DOM Elements
+        const canvas = document.getElementById('game-canvas'); const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('start-screen'); const gameContainer = document.getElementById('game-container');
+        const playButton = document.getElementById('play-button'); const currencyDisplay = document.getElementById('currency-display');
+        const plantMenu = document.getElementById('plant-menu'); const pauseButton = document.getElementById('pause-button'); const twoxSpeedButton = document.getElementById('2x-speed-button');
+        const gameOverlay = document.getElementById('game-overlay');
+        const uprootButton = document.getElementById('uproot-button');
+        const waveDisplay = document.getElementById('wave-display');
+        const seedsDisplay = document.getElementById('seeds-display');
+        const boostsDisplay = document.getElementById('boosts-display');
+        const contextMenu = document.getElementById('plant-context-menu');
+        let activeContextMenuPlant = null;
+		// Shop Modal Elements (Declared globally)
+        let shopButton, shopOverlay, shopCloseButton, shopItems,
+            shopTransactionScreen, shopProgressBar, shopCompleteScreen,
+            shopCompleteMessage, shopCompleteOkButton;
+            
+        // Ability Button Elements (Declared globally)
+        let rowFlareButton, rowFlareCooldown, wallButton, wallCooldown;
+
+        // Game Constants
+        const ROWS = 8; const COLS = 15; const TILE_SIZE = 80;
+        const CANVAS_WIDTH = COLS * TILE_SIZE; const CANVAS_HEIGHT = ROWS * TILE_SIZE;
+        const FPS = 60;
+
+        // Asset paths
+        const IMAGE_SOURCES = {
+            tile: 'Oily Grass Patch.png',
+            burnt_tile: 'Burnt Grass Patch.png',
+            lava_tile: 'Lava Grass Patch.png',
+			tile_water: 'Water Patch.png',
+            plant_bulb: 'Bulb Bopper.png',
+            plant_double_bulb: 'Double Bulb Bopper.png',
+            plant_beetroot: 'Beefy Beetroot.png',
+            plant_monion: 'Monion.png',
+            plant_fortunion: 'Fortunion.png',
+            plant_potato: 'Pathblocker Potato.png',
+            plant_rustroot: 'Rustroot Spud.png',
+            plant_durian: 'Deadly Durian.png',
+            plant_jackfruit: 'Jagged Jackfruit.png',
+            plant_thistle: 'Thorny Thistle.png',
+            plant_rosebush: 'Ravager Rosebush.png',
+            plant_pepper: 'Pepper Popper.png',
+            plant_triple_bulb: 'Triple Bulb Bopper.png',
+            plant_back_bulb: 'Back Bulb Bopper.png',
+            plant_flip_bulb: 'Flip Bulb Bopper.png',
+            plant_carb_cannon: 'Carb Cannon.png',
+            plant_combustion_coconut: 'Combustion Coconut.png',
+            plant_willful_watermelon: 'Willful Watermelon.png',
+            plant_zucchini_zapper: 'Zucchini Zapper.png',
+            plant_crisis_carrot: 'Crisis Carrot.png',
+            plant_hypnotizer_hop: 'Hypnotizer Hop.png',
+            plant_myrtle: 'Mythical Myrtle.png', // NEW
+            plant_laser_lilac: 'Laser Lilac.png', // NEW
+			// The Power Group
+			plant_aura_aloe: 'Aura Aloe.png',
+			plant_waterlily: 'Wet Waterlily.png',
+            projectile_bulb: 'Bulb.png',
+            projectile_pepper: 'Fire Pepper.png',
+            projectile_carb: 'Carb.png',
+            projectile_zap: 'Zap.png',
+            projectile_heavy_zap: 'Heavy Zap.png',
+            enemy_start: 'Start Mower.png',
+			enemy_classic: 'Lawn Mower.png',
+            enemy_speedy: 'Speed Mower.png',
+            enemy_stone: 'Stone Mower.png',
+            enemy_tank: 'Tank Mower.png',
+            enemy_fire: 'Fire Mower.png',
+            enemy_unpredictable: 'Unpredictable Mower.png',
+            enemy_push: 'Push Mower.png',
+            enemy_skullcrusher: 'Skullcrusher Tank Mower.png',
+            enemy_back_mower: 'Back Mower.png',
+            enemy_reaper: 'Reaper Mower.png',
+            enemy_stealth: 'Stealth Mower.png',
+            enemy_destroyer_tank: 'Destroyer Tank Mower.png',
+            enemy_shield_mower: 'Shield Mower.png', // NEW
+			// The Power Group:
+			enemy_kamikaze: 'Kamikaze Mower.png',
+			enemy_splitter: 'Splitter Mower.png',
+            enemy_mini_mower: 'Mini Mower.png',
+			enemy_thief: 'Thief Mower.png',
+			enemy_rage: 'Rage Mower.png',
+			enemy_general: 'General Mower.png',
+			enemy_tiger: 'Tiger Mower.png',
+			enemy_true_speedy: 'True Speed Mower.png',
+            icon_seed: 'Seeds.png',
+            icon_boost: 'Boost.png',
+			env_fog: 'Fog.png',
+			plant_god_potato: 'God Potato.png',
+        };
+
+        // Data Definitions
+        const PLANT_TYPES = {
+			MONION: { name: 'Monion', cost: 5, health: 50, imageKey: 'plant_monion', behavior: 'PRODUCER', isTargetable: true, productionInterval: 12 * FPS, productionAmount: 1, productionLimit: 25 },
+			BULB_BOPPER: { name: 'Bulb Bopper', cost: 7, health: 50, imageKey: 'plant_bulb', behavior: 'SHOOTER', isTargetable: true, shootInterval: 3 * FPS, projectile: 'BULB', shotLimit: 50 },
+            CARB_CANNON: { name: 'Carb Cannon', cost: 8, health: 50, imageKey: 'plant_carb_cannon', behavior: 'SHOOTER', isTargetable: true, shootInterval: 3 * FPS, projectile: 'CARB', shotLimit: 45 },
+            DOUBLE_BULB_BOPPER: { name: 'Double Bopper', cost: 15, health: 50, imageKey: 'plant_double_bulb', behavior: 'SHOOTER', isTargetable: true, shootInterval: 3.2 * FPS, projectile: 'BULB', shotLimit: 55 },
+            TRIPLE_BULB_BOPPER: { name: 'Triple Bopper', cost: 24, health: 50, imageKey: 'plant_triple_bulb', behavior: 'SHOOTER', isTargetable: true, shootInterval: 3.5 * FPS, projectile: 'BULB', shotLimit: 65 },
+            BACK_BULB_BOPPER: { name: 'Back Bopper', cost: 7, health: 50, imageKey: 'plant_back_bulb', behavior: 'SHOOTER', isTargetable: true, shootInterval: 3 * FPS, projectile: 'BULB', shotLimit: 45 },
+            FLIP_BULB_BOPPER: { name: 'Flip Bopper', cost: 14, health: 50, imageKey: 'plant_flip_bulb', behavior: 'SHOOTER', isTargetable: true, shootInterval: 3 * FPS, projectile: 'BULB', shotLimit: 45 },
+            BEEFY_BEETROOT: { name: 'Beefy Beetroot', cost: 13, health: 700, imageKey: 'plant_beetroot', behavior: 'SHOOTER', isTargetable: true, shootInterval: 3.5 * FPS, projectile: 'BULB', shotLimit: 40 },
+            PEPPER_POPPER: { name: 'Pepper Popper', cost: 15, health: 50, imageKey: 'plant_pepper', behavior: 'SHOOTER', isTargetable: true, shootInterval: 4 * FPS, projectile: 'PEPPER', shotLimit: 45 },
+            PATHBLOCKER_POTATO: { name: 'Pathblocker Potato', cost: 4, health: 1000, imageKey: 'plant_potato', behavior: 'WALL', isTargetable: true },
+            RUSTROOT_SPUD: { name: 'Rustroot Spud', cost: 10, health: 2500, imageKey: 'plant_rustroot', behavior: 'WALL', isTargetable: true },
+            WILLFUL_WATERMELON: { name: 'Willful Watermelon', cost: 30, health: 7500, imageKey: 'plant_willful_watermelon', behavior: 'WALL', isTargetable: true },
+            DEADLY_DURIAN: { name: 'Deadly Durian', cost: 9, health: 1000, imageKey: 'plant_durian', behavior: 'SPIKE', isTargetable: true, damage: 0.05 },
+            JAGGED_JACKFRUIT: { name: 'Jagged Jackfruit', cost: 23, health: 2500, imageKey: 'plant_jackfruit', behavior: 'SPIKE', isTargetable: true, damage: 0.06 },
+            THORNY_THISTLE: { name: 'Thorny Thistle', cost: 12, health: 50, imageKey: 'plant_thistle', behavior: 'SPIKE', isTargetable: false, damage: 0.1 },
+            RAVAGER_ROSEBUSH: { name: 'Ravager Rosebush', cost: 24, health: 50, imageKey: 'plant_rosebush', behavior: 'SPIKE', isTargetable: false, damage: 0.2 },
+            FORTUNION: { name: 'Fortunion', cost: 15, health: 50, imageKey: 'plant_fortunion', behavior: 'PRODUCER', isTargetable: true, productionInterval: 10 * FPS, productionAmount: 1, productionLimit: 75 },
+            COMBUSTION_COCONUT: { name: 'Combustion Coconut', cost: 40, health: 4000, imageKey: 'plant_combustion_coconut', behavior: 'WALL', isTargetable: true },
+            ZUCCHINI_ZAPPER: { name: 'Zucchini Zapper', cost: 25, health: 50, imageKey: 'plant_zucchini_zapper', behavior: 'ZAPPER', isTargetable: true, shootInterval: 5 * FPS, projectile: 'ZAP', shotLimit: 40 },
+            CRISIS_CARROT: { name: 'Crisis Carrot', cost: 40, health: 50, imageKey: 'plant_crisis_carrot', behavior: 'HEAVY_ZAPPER', isTargetable: true, shotLimit: 3 },
+            HYPNOTIZER_HOP: { name: 'Hypnotizer Hop', cost: 65, health: 300, imageKey: 'plant_hypnotizer_hop', behavior: 'WALL', isTargetable: true, isHypnotizer: true },
+            WET_WATERLILY: { name: 'Wet Waterlily', cost: 10, health: 50, imageKey: 'plant_waterlily', behavior: 'WALL', isTargetable: true, createsWater: true },
+			MYTHICAL_MYRTLE: { name: 'Mythical Myrtle', cost: 15, health: 300, imageKey: 'plant_myrtle', behavior: 'DIVERTER', isTargetable: true, divertCooldown: 5 * FPS, weakDuration: 3 * FPS }, // NEW
+            LASER_LILAC: { name: 'Laser Lilac', cost: 30, health: 50, imageKey: 'plant_laser_lilac', behavior: 'BEAM', isTargetable: true, shootInterval: 5 * FPS, beamDamage: 2, beamDuration: 0.3 * FPS }, // NEW
+			AURA_ALOE: { name: 'Aura Aloe', cost: 20, health: 300, imageKey: 'plant_aura_aloe', behavior: 'HEALER', isTargetable: true, healAmount: 0.5, healInterval: 0.01 * FPS },
+		};
+        const ENEMY_TYPES = {
+            START: { name: 'Start Mower', health: 50, imageKey: 'enemy_start', speed: 0.2, moneyOnDrop: 0, attackDamage: 2.5, attackInterval: 0.01 * FPS, canHitGround: false },
+			CLASSIC: { name: 'Lawn Mower', health: 100, imageKey: 'enemy_classic', speed: 0.3, moneyOnDrop: 2, attackDamage: 0.5, attackInterval: 0.01 * FPS, canHitGround: false },
+            SPEEDY: { name: 'Speed Mower', health: 100, imageKey: 'enemy_speedy', speed: 0.8, moneyOnDrop: 2, attackDamage: 0.5, attackInterval: 0.01 * FPS, canHitGround: false },
+            STONE: { name: 'Stone Mower', health: 280, imageKey: 'enemy_stone', speed: 0.25, moneyOnDrop: 2, attackDamage: 0.5, attackInterval: 0.01 * FPS, canHitGround: false },
+            TANK: { name: 'Tank Mower', health: 660, imageKey: 'enemy_tank', speed: 0.2, moneyOnDrop: 3, attackDamage: 1000, attackInterval: 2 * FPS, canHitGround: true },
+            FIRE_MOWER: { name: 'Fire Mower', health: 250, imageKey: 'enemy_fire', speed: 0.4, moneyOnDrop: 2, attackDamage: 1, attackInterval: 0.01 * FPS, canHitGround: false },
+            UNPREDICTABLE: { name: 'Unpredictable Mower', health: 150, imageKey: 'enemy_unpredictable', speed: 0.5, moneyOnDrop: 2, attackDamage: 0.5, attackInterval: 0.01 * FPS, canHitGround: false, rowChangeInterval: 3 * FPS, rowMoveSpeed: 4 },
+            PUSH_MOWER: { name: 'Push Mower', health: 400, imageKey: 'enemy_push', speed: 0.35, moneyOnDrop: 3, attackDamage: 0, attackInterval: 0, canHitGround: false, isPusher: true },
+            REAPER_MOWER: { name: 'Reaper Mower', health: 300, imageKey: 'enemy_reaper', speed: 0.4, moneyOnDrop: 2, attackDamage: 1, attackInterval: 0.01 * FPS, canHitGround: false, behavior: 'reaper' },
+            BACK_MOWER: { name: 'Back Mower', health: 100, imageKey: 'enemy_back_mower', speed: 5, returnSpeed: 0.4, moneyOnDrop: 2, attackDamage: 0.5, attackInterval: 0.01 * FPS, canHitGround: false, behavior: 'back_mower' },
+            SKULLCRUSHER: { name: 'Skullcrusher', health: 1400, imageKey: 'enemy_skullcrusher', speed: 0.15, moneyOnDrop: 4, attackDamage: 1500, attackInterval: 1.5 * FPS, canHitGround: true, rowChangeInterval: 3 * FPS, rowMoveSpeed: 4 },
+            DESTROYER_TANK: { name: 'Destroyer Tank', health: 3500, imageKey: 'enemy_destroyer_tank', speed: 0.15, moneyOnDrop: 50, attackDamage: 1500, attackInterval: 1.5 * FPS, canHitGround: true, rowChangeInterval: 4 * FPS, rowMoveSpeed: 4, behavior: 'boss_destroyer', summonInterval: 15 * FPS },
+            STEALTH: { name: 'Stealth Mower', health: 120, imageKey: 'enemy_stealth', speed: 0.5, moneyOnDrop: 2, attackDamage: 0.5, attackInterval: 0.01 * FPS, canHitGround: false, isStealthed: false },
+            SHIELD_MOWER: { name: 'Shield Mower', health: 200, imageKey: 'enemy_shield_mower', speed: 0.25, moneyOnDrop: 2, attackDamage: 0.3, attackInterval: 0.01 * FPS, canHitGround: false, zapResistance: 0.5 }, // NEW
+			KAMIKAZE: { name: 'Kamikaze Mower', health: 50, imageKey: 'enemy_kamikaze', speed: 1.2, moneyOnDrop: 1, attackDamage: 0, attackInterval: 0, canHitGround: false, behavior: 'kamikaze', explosionDamage: 1500 },
+			SPLITTER: { name: 'Splitter Mower', health: 300, imageKey: 'enemy_splitter', speed: 0.3, moneyOnDrop: 2, attackDamage: 0.5, attackInterval: 0.01 * FPS, canHitGround: false, behavior: 'splitter' },
+            MINI_MOWER: { name: 'Mini-Mower', health: 40, imageKey: 'enemy_mini_mower', speed: 0.9, moneyOnDrop: 0, attackDamage: 1, attackInterval: 0.01 * FPS, canHitGround: false },
+			THIEF: { name: 'Thief Mower', health: 150, imageKey: 'enemy_thief', speed: 0.9, moneyOnDrop: 0, attackDamage: 0, attackInterval: 0, canHitGround: false, behavior: 'thief' },
+			RAGE: { name: 'Rage Mower', health: 250, imageKey: 'enemy_rage', speed: 0.6, moneyOnDrop: 2, attackDamage: 0.7, attackInterval: 0.01 * FPS, canHitGround: false, behavior: 'rage' },
+			GENERAL: { name: 'General Mower', health: 800, imageKey: 'enemy_general', speed: 0.2, moneyOnDrop: 3, attackDamage: 0, attackInterval: 0, canHitGround: false, behavior: 'general', generalCooldown: 10 * FPS },
+			TIGER: { name: 'Tiger Mower', health: 300, imageKey: 'enemy_tiger', speed: 0.5, moneyOnDrop: 2, attackDamage: 0.6, attackInterval: 0.01 * FPS, canHitGround: false, behavior: 'tiger' },
+			TRUE_SPEEDY: { name: 'True Speed Mower', health: 200, imageKey: 'enemy_true_speedy', speed: 2, moneyOnDrop: 2, attackDamage: 2, attackInterval: 0.01 * FPS, canHitGround: false },
+		};
+        const PROJECTILE_TYPES = { 
+            BULB: { imageKey: 'projectile_bulb', width: 30, height: 20, speed: 8, damage: 7 },
+            PEPPER: { imageKey: 'projectile_pepper', width: 30, height: 30, speed: 6, damage: 5, isExplosive: true, explosionRadius: TILE_SIZE * 2 },
+            CARB: { imageKey: 'projectile_carb', width: 30, height: 20, speed: 8, damage: 4, pushback: 5 },
+            ZAP: { imageKey: 'projectile_zap', width: 25, height: 25, speed: 12, damage: 15 },
+            HEAVY_ZAP_ATTACK: { imageKey: 'projectile_heavy_zap', width: 40, height: 40, speed: 8, damage: 100, isExplosive: true, explosionRadius: TILE_SIZE * 2, explosionColor: 'fire' },
+            HEAVY_ZAP_BOOST: { imageKey: 'projectile_heavy_zap', width: 30, height: 30, speed: 10, damage: 0 },
+        };
+        const WAVE_DATA = [
+            // --- Waves 1-5: The Introduction ---
+            { mowerTypes: { START: 1 } }, // Wave 1
+            { mowerTypes: { CLASSIC: 3 } }, // Wave 2
+            { mowerTypes: { CLASSIC: 6 } }, // Wave 3
+            { mowerTypes: { CLASSIC: 8, SPEEDY: 2 } }, // Wave 4
+            { mowerTypes: { CLASSIC: 8, SPEEDY: 4, STONE: 2 } }, // Wave 5
+
+            // --- Waves 6-10: Introducing Mechanics ---
+            { mowerTypes: { SPEEDY: 10, STONE: 7, FIRE_MOWER: 1, BACK_MOWER: 2 } }, // Wave 6: Fire and Flankers
+            { mowerTypes: { CLASSIC: 15, SPEEDY: 10, STONE: 10, FIRE_MOWER: 2 } }, // Wave 7
+            { mowerTypes: { CLASSIC: 12, SPEEDY: 14, STONE: 14, TANK: 1, FIRE_MOWER: 3 } }, // Wave 8: First Tank
+            { mowerTypes: { SPEEDY: 20, TANK: 2, FIRE_MOWER: 4, UNPREDICTABLE: 2, BACK_MOWER: 1 } }, // Wave 9: Row Changers
+            { mowerTypes: { STONE: 15, TANK: 2, FIRE_MOWER: 5, UNPREDICTABLE: 3, RAGE: 3 } }, // Wave 10: NEW - Introducing Rage Mower
+
+            // --- Waves 11-15: New Threats ---
+            { mowerTypes: { CLASSIC: 20, SPEEDY: 20, TANK: 2, FIRE_MOWER: 4, PUSH_MOWER: 1, BACK_MOWER: 2, THIEF: 2 } }, // Wave 11: NEW - Introducing Push & Thief
+            { mowerTypes: { STONE: 20, SPEEDY: 15, TANK: 3, FIRE_MOWER: 5, UNPREDICTABLE: 4, PUSH_MOWER: 2, STEALTH: 2, SHIELD_MOWER: 2 } }, // Wave 12: Stealth & Shields
+            { mowerTypes: { SPEEDY: 15, REAPER_MOWER: 3, TANK: 2, BACK_MOWER: 3, KAMIKAZE: 4 } }, // Wave 13: NEW - Introducing Reaper & Kamikaze
+            { mowerTypes: { UNPREDICTABLE: 10, REAPER_MOWER: 4, PUSH_MOWER: 2, STEALTH: 3, SHIELD_MOWER: 3, TIGER: 3 } }, // Wave 14: NEW - Introducing Tiger Mower
+            { mowerTypes: { TANK: 4, SKULLCRUSHER: 1, REAPER_MOWER: 3, FIRE_MOWER: 5, SPLITTER: 3 } }, // Wave 15: NEW - First Skullcrusher & Splitter
+
+            // --- Waves 16-20: Pre-Boss Combinations ---
+            { mowerTypes: { CLASSIC: 15, SPEEDY: 15, STONE: 10, TANK: 3, SKULLCRUSHER: 1, REAPER_MOWER: 4, PUSH_MOWER: 2, STEALTH: 3, SHIELD_MOWER: 3, RAGE: 3, THIEF: 2, TRUE_SPEEDY: 3 } }, // Wave 16: Big Mix
+            { mowerTypes: { TRUE_SPEEDY: 10, STONE: 20, STEALTH: 5, SHIELD_MOWER: 12, TIGER: 12 } }, // Wave 17: "The Pack" - Tigers protected by a shield wall
+            { mowerTypes: { TANK: 5, SKULLCRUSHER: 2, PUSH_MOWER: 5, STEALTH: 10, KAMIKAZE: 10 } }, // Wave 18: "Breach" - Kamikazes clear walls for heavy hitters
+            { mowerTypes: { CLASSIC: 20, TANK: 8, STONE: 15, SPLITTER: 5, RAGE: 5, THIEF: 4 } }, // Wave 19: "Anarchy" - Swarm of thieves, ragers, and splitters
+            { mowerTypes: { SKULLCRUSHER: 4, RAGE: 8, GENERAL: 1 }, isFoggy: true }, // Wave 20: "The General's Charge" - General forces Skullcrushers and Ragers into one row.
+
+            // --- Wave 21: THE BOSS ---
+            { mowerTypes: { DESTROYER_TANK: 1 } }, // Wave 21: FINALE (Part 1)
+
+            // --- Waves 22-30: NEW POST-BOSS "CHALLENGE" WAVES ---
+            { mowerTypes: { SPLITTER: 10, TIGER: 10, TRUE_SPEEDY: 15 } }, // Wave 22: "The Swarm" - Tigers buff each other while Splitters create endless Mini-Mowers.
+            { mowerTypes: { STEALTH: 15, SHIELD_MOWER: 10, PUSH_MOWER: 10 }, isFoggy: true }, // Wave 23: "Untouchable" - A wave designed to bypass defenses.
+            { mowerTypes: { RAGE: 15, KAMIKAZE: 10, BACK_MOWER: 10 }, TANK: 5 }, // Wave 24: "Red Line" - Pure, unadulterated speed and aggression.
+            { mowerTypes: { THIEF: 15, REAPER_MOWER: 15, UNPREDICTABLE: 10, STONE: 10 } }, // Wave 25: "The Great Heist" - Thieves steal plants while Reapers disable them.
+            { mowerTypes: { GENERAL: 2, TANK: 8, SPLITTER: 8 } }, // Wave 26: "Disarray" - Two Generals fight for row control, sending Tanks and Splitters everywhere.
+            { mowerTypes: { TIGER: 12, TANK: 4, SHIELD_MOWER: 8 } }, // Wave 27: "Tiger Tank Division" - Tigers grow incredibly strong behind a wall of Tanks and Shields.
+            { mowerTypes: { SKULLCRUSHER: 6, RAGE: 10, GENERAL: 1 }, isFoggy: true }, // Wave 28: "Skullcrusher's Revenge" - A deadlier version of Wave 20.
+            { mowerTypes: { SKULLCRUSHER: 3, TANK: 8, STONE: 20, PUSH_MOWER: 5, RAGE: 10 } }, // Wave 29: "The Stampede" - An overwhelming force of heavy units.
+            { mowerTypes: { DESTROYER_TANK: 1, GENERAL: 1, SHIELD_MOWER: 6, KAMIKAZE: 10 } } // Wave 30: "Annihilation" - The true final wave. The Boss is supported by a General.
+        ];
+        // --- END MODIFIED ---
+
+        // Game State
+        let currency = 15; let seeds = 3; let boosts = 0; let gameSpeed = 1;
+		let hacks = {
+            weakenMowers: false,
+            instantCooldowns: false
+        };
+        let gameGrid = []; let plants = []; let enemies = []; let projectiles = []; let explosions = []; let beams = []; // NEW: added beams
+        let floatingIcons = []; let burntTiles = []; let lavaTiles = []; let desaturatedTiles = [];
+		let waterPatches = [];
+		let isFoggy = false;
+        let gameRunning = false; let isPaused = false;
+        let images = {}; let selectedPlantType = null; let isUprooting = false;
+        let currentWave = 0; let waveTimer = 3 * FPS; let waveInProgress = false;
+        let enemiesToSpawn = []; let spawnTimer = 0;
+        
+        // Game Over Animation State
+        let isGameOverAnimation = false; let gameOverState = '';
+        let plantsToFade = []; let gameOverAnimationTimer = 0;
+
+        // NEW: Win Animation State
+        let isWaveClearAnimation = false;
+        let waveClearTimer = 0;
+        let waveClearPhase = 'IDLE';
+        let finalScore = 0;
+
+        // NEW: Boss State
+        let currentBoss = null;
+
+        // === CLASSES ===
+        class Plant {
+            constructor(row, col, typeKey) {
+                const typeData = PLANT_TYPES[typeKey];
+                this.row = row; this.col = col;
+                this.typeKey = typeKey;
+                this.x = col * TILE_SIZE; this.y = row * TILE_SIZE; this.width = TILE_SIZE * 0.9; this.height = TILE_SIZE * 0.9;
+                this.health = typeData.health; this.maxHealth = typeData.health;
+                this.originalMaxHealth = typeData.health;
+                this.behavior = typeData.behavior; this.image = images[typeData.imageKey];
+                this.isTargetable = typeData.isTargetable;
+                this.isHypnotizer = typeData.isHypnotizer || false;
+                this.actionTimer = 0; this.glowTimer = 0;
+                this.usageCount = 0; this.isSlowed = false; this.removed = false;
+                this.isBoosted = false; this.boostTimer = 0;
+                this.isDefeated = false;
+                // NEW: Animation properties
+                this.anim = { state: 'IDLE', timer: 0, origY: this.y, velY: 0 };
+
+                // --- MODIFIED: Renamed 'orbs' to 'ammo' ---
+                if (this.typeKey === 'CRISIS_CARROT') { // Name change
+                    this.ammo = PLANT_TYPES[this.typeKey].shotLimit; // Use shotLimit
+                    this.ammoCooldown = 0;
+                    this.ammoAnimTimer = Math.random() * 1000; // Random start for anim
+                }
+                // --- END MODIFIED ---
+                
+                // NEW: DIVERTER properties
+                if (this.behavior === 'DIVERTER') {
+                    this.divertTimer = 0;
+                    this.isWeak = false;
+                    this.weakTimer = 0;
+                }
+            }
+            update(enemiesOnRow) {
+                if (this.removed) return;
+                this.actionTimer++; if (this.glowTimer > 0) this.glowTimer--;
+                
+                if (this.isBoosted && this.behavior !== 'WALL') {
+                    this.boostTimer--;
+                    if (this.boostTimer <= 0) this.isBoosted = false;
+                }
+
+                const typeData = PLANT_TYPES[this.typeKey];
+                switch (this.behavior) {
+                    case 'SHOOTER': {
+                        let interval = typeData.shootInterval;
+						if (this.isSlowed) interval *= 2;
+                        if (this.isBoosted) interval /= 5;
+                        if (enemiesOnRow.length > 0 && this.actionTimer >= interval) {
+                            this.shoot(); this.actionTimer = 0;
+                            if (!this.isSlowed) {
+                                this.usageCount++;
+                                if (typeData.shotLimit && this.usageCount >= typeData.shotLimit) this.isSlowed = true;
+                            }
+                        }
+                        break;
+                    }
+                    case 'PRODUCER': {
+                        let interval = typeData.productionInterval;
+                        if (this.isSlowed) interval *= 2;
+						if (this.isBoosted) interval /= 5;
+                        if (this.actionTimer >= interval) {
+                            currency += typeData.productionAmount; updateTopBar(); this.actionTimer = 0; this.glowTimer = 30;
+                            floatingIcons.push(new FloatingIcon(this.x, this.y, 'currency'));
+                            if (!this.isSlowed) {
+                                this.usageCount += typeData.productionAmount;
+                                if (typeData.productionLimit && this.usageCount >= typeData.productionLimit) this.isSlowed = true;
+                            }
+                        }
+                        break;
+                    }
+                    case 'ZAPPER': {
+						let interval = typeData.shootInterval;
+						if (this.isSlowed) interval *= 2;
+						if (this.isBoosted) interval /= 5;
+
+						if (this.actionTimer >= interval && enemies.length > 0) {
+                            let target = null;
+                            
+                            // Find all enemies in the "danger zone" (e.g., columns 0-4)
+                            const dangerZoneEnemies = enemies.filter(e => {
+                                const c = Math.floor((e.x + e.width / 2) / TILE_SIZE);
+                                return c >= 0 && c <= 4;
+                            });
+
+                            if (dangerZoneEnemies.length > 0) {
+                                // Target the leftmost (most dangerous) enemy in the danger zone
+                                target = dangerZoneEnemies.reduce((best, cur) => (!best || cur.x < best.x) ? cur : best);
+                            } else {
+                                // If no one is close, just target the leftmost enemy on screen
+                                target = enemies.reduce((best, cur) => (!best || cur.x < best.x) ? cur : best);
+                            }
+
+							if (target) {
+								this.shoot(target);
+								this.actionTimer = 0;
+								if (!this.isSlowed) {
+									this.usageCount++;
+									if (typeData.shotLimit && this.usageCount >= typeData.shotLimit) this.isSlowed = true;
+								}
+							}
+						}
+						break;
+					}
+                    // --- MODIFIED & FIXED: HEAVY ZAPPER (Crisis Carrot) ---
+                    case 'HEAVY_ZAPPER': {
+                        this.ammoAnimTimer++; // For ammo animation
+                        
+                        // Check for self-destruct *first*
+                        if (this.ammo <= 0) {
+                            if (this.anim.state !== 'SELF_DESTRUCT') {
+                                this.anim.state = 'SELF_DESTRUCT';
+                                this.anim.timer = 0;
+                                this.ammoCooldown = 99999; // Prevent firing while dying
+                            }
+                            return; // Stop all other logic
+                        }
+                        
+                        if (this.ammoCooldown > 0) {
+                             this.ammoCooldown--;
+                             break; // On cooldown, do nothing else
+                        }
+
+                        // Target enemies in the leftmost 5 columns
+                        const dangerZoneEnemies = enemies.filter(e => {
+                            return e.x < TILE_SIZE * 5 && !e.isHypnotized;
+                        });
+
+                        if (dangerZoneEnemies.length > 0) {
+                            // Target the leftmost (most dangerous) one
+                            let target = dangerZoneEnemies.reduce((best, cur) => (!best || cur.x < best.x) ? cur : best);
+                            
+                            if (target) {
+                                // Consume ammo and attack!
+                                this.ammo--;
+                                this.ammoCooldown = 2 * FPS; // 2 second cooldown
+                                
+                                projectiles.push(new Projectile(this.x + this.width / 2, this.y + this.height / 2, this.row, 'HEAVY_ZAP_ATTACK', 1, target));
+                            }
+                        }
+                        break;
+                    }
+                    // --- END MODIFIED ---
+                    // --- NEW: DIVERTER (Mythical Myrtle) ---
+                    case 'DIVERTER': {
+						const typeData = PLANT_TYPES[this.typeKey];
+
+						// Always tick both timers if present
+						if (this.weakTimer > 0) this.weakTimer--;
+						if (this.divertTimer > 0) this.divertTimer--;
+
+						// Manage weak flag separately (so we don't rely on branching order)
+						if (this.weakTimer <= 0) {
+							this.isWeak = false;
+						}
+
+						// Find enemies in this tile (visual overlap)
+						const enemiesOnTile = enemies.filter(e =>
+							!e.isHypnotized &&
+							Math.abs(e.y - this.y) < TILE_SIZE / 2 &&
+							rectsOverlap(this, e)
+							//&& e.typeKey !== 'SKULLCRUSHER' && e.typeKey !== 'DESTROYER_TANK'
+							);
+
+						if (enemiesOnTile.length > 0 && !this.isWeak && this.divertTimer <= 0) {
+							const enemy = enemiesOnTile[0];
+
+							// Choose direction
+							let targetRow;
+							if (this.row === 0) targetRow = 1;
+							else if (this.row === ROWS - 1) targetRow = ROWS - 2;
+							else targetRow = this.row + (Math.random() < 0.5 ? -1 : 1);
+
+							// Force the enemy to move rows — set both targetY and the visual y for reliability
+							enemy.targetY = targetRow * TILE_SIZE;
+							enemy.row = targetRow;
+							enemy.rowChangeTimer = 0;
+							// Optionally teleport (uncomment if you want instant change)
+							// enemy.y = targetRow * TILE_SIZE;
+
+							// Enter weak + start cooldown immediately (cooldown includes weak duration if you want)
+							this.isWeak = true;
+							this.weakTimer = typeData.weakDuration;
+							// Start cooldown now so there's no race later
+							this.divertTimer = typeData.divertCooldown;
+							this.glowTimer = 30;
+						}
+						break;
+					}
+                    // --- END NEW ---
+                    // --- NEW: BEAM (Laser Lilac) ---
+                    case 'BEAM': {
+                        const typeData = PLANT_TYPES[this.typeKey];
+                        let interval = typeData.shootInterval;
+                        if (this.isSlowed) interval *= 2;
+                        if (this.isBoosted) interval /= 5;
+                        
+                        // Check for any non-hypnotized enemy in the row
+                        const enemyInRow = enemiesOnRow.some(e => !e.isHypnotized);
+                        
+                        if (enemyInRow && this.actionTimer >= interval) {
+                            this.actionTimer = 0;
+                            const pY_center = this.y + this.height / 2;
+                            beams.push(new Beam(this.x + this.width - 10, pY_center - (TILE_SIZE * 0.1), this.row, typeData.beamDuration, typeData.beamDamage, this));
+                            
+                            if (!this.isSlowed) {
+                                this.usageCount++;
+                                // Note: No shotLimit defined for this one, but could be added
+                            }
+                        }
+                        break;
+                    }
+                    case 'HEALER': {
+                        let interval = typeData.healInterval || (0.1 * FPS);
+                        // Healer isn't affected by "slowed" status
+                        if (this.isBoosted) interval /= 5;
+                        
+                        if (this.actionTimer >= interval) {
+                            this.actionTimer = 0;
+                            // Find plant in front (col + 1)
+                            if (this.col < COLS - 1) {
+                                const plantInFront = gameGrid[this.row][this.col + 1];
+                                if (plantInFront && plantInFront.health < plantInFront.maxHealth) {
+                                    plantInFront.health += typeData.healAmount || 0.1;
+                                    plantInFront.health = Math.min(plantInFront.health, plantInFront.maxHealth);
+                                    
+                                    // Add a small glow to show healing
+                                    if (plantInFront.glowTimer <= 0) plantInFront.glowTimer = 5;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            shoot(target = null) {
+                const projectileType = PLANT_TYPES[this.typeKey].projectile;
+                const pY_center = this.y + this.height / 2;
+                if (this.behavior === 'ZAPPER' && target) {
+                    projectiles.push(new Projectile(this.x + this.width / 2, pY_center - 10, this.row, projectileType, 1, target));
+                    return;
+                }
+                if (this.typeKey === 'BACK_BULB_BOPPER') {
+                    let pX = this.x; projectiles.push(new Projectile(pX, pY_center - 10, this.row, projectileType, -1));
+                } else if (this.typeKey === 'FLIP_BULB_BOPPER') {
+                    projectiles.push(new Projectile(this.x, pY_center - 10, this.row, projectileType, -1));
+                    projectiles.push(new Projectile(this.x + this.width - 20, pY_center - 10, this.row, projectileType, 1));
+                } else {
+                    let pX = this.x + this.width - 20;
+                    if (this.typeKey === 'DOUBLE_BULB_BOPPER') {
+                        projectiles.push(new Projectile(pX, pY_center - 15, this.row, projectileType, 1));
+                        projectiles.push(new Projectile(pX, pY_center + 5, this.row, projectileType, 1));
+                    } else if (this.typeKey === 'TRIPLE_BULB_BOPPER') {
+                        projectiles.push(new Projectile(pX, pY_center - 30, this.row, projectileType, 1));
+                        projectiles.push(new Projectile(pX, pY_center -10, this.row, projectileType, 1));
+						projectiles.push(new Projectile(pX, pY_center +10, this.row, projectileType, 1));
+                    } else {
+                        projectiles.push(new Projectile(pX, pY_center - 10, this.row, projectileType, 1));
+                    }
+                }
+            }
+            // --- MODIFIED: Added double damage for 'weak' state ---
+            takeDamage(amount) { 
+                if (this.removed) return;
+
+                if (this.isWeak) amount *= 2; // Take double damage while weak
+
+                this.health -= amount; 
+                if (this.health <= 0) this.remove();
+            }
+            // --- END MODIFIED ---
+            remove(isWinAnimation = false) { // MODIFIED: Added flag
+                if (!this.removed) {
+                    // NEW: Wet Waterlily Logic
+                    const plantData = PLANT_TYPES[this.typeKey];
+                    if (plantData.createsWater && !isWinAnimation) {
+                        // Remove any existing patch first
+                        waterPatches = waterPatches.filter(p => p.row !== this.row || p.col !== this.col);
+                        waterPatches.push({ row: this.row, col: this.col, timer: 20 * FPS });
+                    }
+                    // END NEW
+
+                    if (this.typeKey === 'COMBUSTION_COCONUT' && !isWinAnimation) { // MODIFIED: Added win anim check
+						const diameter = this.isBoosted ? 5 : 3;
+						const half = Math.floor(diameter / 2);
+						const explosionCenterR = this.row;
+						const explosionCenterC = this.col;
+						const visualSize = TILE_SIZE * (diameter / 2);
+						explosions.push(new Explosion(this.x + this.width/2, this.y + this.height/2, visualSize, 0, 'fire')); // MODIFIED: Added color
+
+						for (let r_offset = -half; r_offset <= half; r_offset++) {
+							for (let c_offset = -half; c_offset <= half; c_offset++) {
+								const r = explosionCenterR + r_offset;
+								const c = explosionCenterC + c_offset;
+								if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+									if (!isTileBurnt(r, c)) burntTiles.push({ row: r, col: c, timer: 15 * FPS });
+									const plantOnTile = gameGrid[r][c];
+									if (plantOnTile && plantOnTile !== this) {
+										plantOnTile.health = Math.min(plantOnTile.maxHealth, plantOnTile.health + 1000);
+                                        // Fix: Always unslow plants
+										if (plantOnTile.isSlowed) {
+											plantOnTile.isSlowed = false;
+											plantOnTile.usageCount = 0;
+										}
+                                        // Fix: Only add ammo if plant is empty
+                                        const plantData = PLANT_TYPES[plantOnTile.typeKey];
+										if (plantData.shotLimit && plantOnTile.usageCount >= plantData.shotLimit) {
+                                            plantOnTile.usageCount = Math.max(0, plantOnTile.usageCount - 5);
+                                        }
+                                        if (plantData.productionLimit && plantOnTile.usageCount >= plantData.productionLimit) {
+                                            plantOnTile.usageCount = Math.max(0, plantOnTile.usageCount - 5);
+                                        }
+                                        // NEW: Restore ammo to Crisis Carrot
+                                        if (plantOnTile.typeKey === 'CRISIS_CARROT') {
+                                            plantOnTile.ammo = PLANT_TYPES[plantOnTile.typeKey].shotLimit;
+                                        }
+									}
+								}
+							}
+						}
+						const explosionRect = {
+							x: (this.col - half) * TILE_SIZE, y: (this.row - half) * TILE_SIZE,
+							width: TILE_SIZE * diameter, height: TILE_SIZE * diameter
+						};
+						enemies.forEach(enemy => {
+						   if (rectsOverlap(enemy, explosionRect)) enemy.takeDamage(200);
+						});
+					}
+
+                    // --- MODIFIED: Renamed 'orbs' to 'ammo' ---
+                    if (this.typeKey === 'CRISIS_CARROT' && this.ammo > 0 && !isWinAnimation) {
+                        const unboostedPlants = plants.filter(p => !p.isBoosted && p !== this);
+                        unboostedPlants.sort(() => 0.5 - Math.random()); // Shuffle
+                        
+                        for (let i = 0; i < this.ammo; i++) {
+                            const targetPlant = unboostedPlants[i];
+                            if (targetPlant) {
+                                projectiles.push(new Projectile(this.x + this.width / 2, this.y + this.height / 2, this.row, 'HEAVY_ZAP_BOOST', 1, targetPlant));
+                            }
+                        }
+                    }
+                    // --- END MODIFIED ---
+
+                    if (Math.random() < 0.20 && !isWinAnimation) { // MODIFIED: Added win anim check
+                        seeds++; updateTopBar();
+                        floatingIcons.push(new FloatingIcon(this.x, this.y, 'seed'));
+                    }
+                    this.removed = true;
+                    if (gameGrid[this.row] && gameGrid[this.row][this.col] === this) gameGrid[this.row][this.col] = null;
+                    const idx = plants.indexOf(this);
+                    if (idx !== -1) plants.splice(idx, 1);
+                }
+            }
+            draw() {
+                if (this.removed) return;
+                ctx.save();
+                
+                let animScale = (this.anim && this.anim.scale) ? this.anim.scale : 1.0;
+                let isGlowing = (this.anim && this.anim.glow);
+                
+                // --- MODIFIED: Crisis Carrot Self-Destruct Visual ---
+                if (this.typeKey === 'CRISIS_CARROT' && this.anim.state === 'SELF_DESTRUCT') {
+                    this.anim.timer++;
+                    const glowAmount = 1 + (this.anim.timer / 10);
+                    ctx.filter = `brightness(${glowAmount}) saturate(${glowAmount * 2})`;
+                    
+                    if (this.anim.timer > 30) {
+                        // Disappear with energy
+                        explosions.push(new Explosion(this.x + this.width/2, this.y + this.height/2, TILE_SIZE * 2.5, 0, 'zap'));
+                        this.remove(true); // Remove without death effects
+                    }
+                }
+                // --- END MODIFIED ---
+                else if (this.isDefeated) {
+                    ctx.filter = 'grayscale(100%) brightness(0.7)';
+                } else {
+                    const isBoostedWall = this.behavior === 'WALL' && this.health > this.originalMaxHealth;
+                    
+                    if (isGlowing) {
+                         ctx.filter = 'brightness(2.0) saturate(3.0)';
+                    // --- NEW: Mythical Myrtle 'weak' visual ---
+                    } else if (this.isWeak) {
+                        // Pulsing gray effect
+                        const pulse = Math.abs(Math.sin(this.weakTimer * 0.2));
+                        ctx.filter = `grayscale(1) brightness(${1.0 + pulse * 0.5})`;
+                    // --- END NEW ---
+                    } else if (this.isBoosted || isBoostedWall) {
+                        ctx.filter = 'saturate(5) brightness(1.5) hue-rotate(-50deg)';
+                    } else if (this.isSlowed) {
+                        ctx.filter = this.glowTimer > 0 ? 'grayscale(100%) saturate(0%) brightness(1.2)' : 'grayscale(100%) saturate(0%) brightness(0.7)';
+                    } else if (this.glowTimer > 0) {
+                        ctx.filter = `brightness(1.5) saturate(1.5)`;
+                    }
+                }
+                
+                const drawW = this.width * animScale;
+                const drawH = this.height * animScale;
+                const drawX = this.x - (drawW - this.width) / 2;
+                const drawY = this.y - (drawH - this.height) / 2;
+                
+                drawImageOrFallback(ctx, this.image, drawX, drawY, drawW, drawH);
+                
+                ctx.filter = 'none';
+                
+                // --- MODIFIED: Draw Crisis Carrot Ammo (Spinning) ---
+                if (this.typeKey === 'CRISIS_CARROT' && this.ammo > 0 && this.anim.state !== 'SELF_DESTRUCT' && !this.isDefeated) {
+                    const ammoImg = images.projectile_heavy_zap;
+                    const radius = TILE_SIZE * 0.6;
+                    const centerX = this.x + this.width / 2;
+                    const centerY = this.y + this.height / 2;
+                    const angleBase = this.ammoAnimTimer * 0.05; // This line creates the spin
+                    
+                    ctx.save();
+                    ctx.filter = 'brightness(1.5) drop-shadow(0 0 5px #FFF)';
+                    if (this.ammo >= 1) {
+                        const angle1 = angleBase;
+                        drawImageOrFallback(ctx, ammoImg, centerX + Math.cos(angle1) * radius - 15, centerY + Math.sin(angle1) * radius - 15, 30, 30);
+                    }
+                    if (this.ammo >= 2) {
+                        const angle2 = angleBase + (Math.PI * 2 / 3);
+                        drawImageOrFallback(ctx, ammoImg, centerX + Math.cos(angle2) * radius - 15, centerY + Math.sin(angle2) * radius - 15, 30, 30);
+                    }
+                    if (this.ammo >= 3) {
+                        const angle3 = angleBase + (Math.PI * 4 / 3);
+                        drawImageOrFallback(ctx, ammoImg, centerX + Math.cos(angle3) * radius - 15, centerY + Math.sin(angle3) * radius - 15, 30, 30);
+                    }
+                    ctx.restore();
+                }
+                // --- END MODIFIED ---
+
+                if (this.maxHealth && !this.isDefeated) {
+                    const isBoostedWall = this.behavior === 'WALL' && this.health > this.originalMaxHealth;
+                    if (isBoostedWall) {
+                        const bonusHealth = this.health - this.originalMaxHealth;
+                        drawHealthBar(ctx, this.x, this.y, this.width, this.height, this.originalMaxHealth, this.originalMaxHealth);
+                        drawHealthBar(ctx, this.x, this.y, this.width, this.height, bonusHealth, this.originalMaxHealth, '#FFD700');
+                    } else {
+                        drawHealthBar(ctx, this.x, this.y, this.width, this.height, this.health, this.maxHealth);
+                    }
+                }
+                ctx.restore();
+            }
+        }
+
+        class Enemy {
+             constructor(row, typeKey) {
+                const typeData = ENEMY_TYPES[typeKey];
+                this.row = row; this.typeKey = typeKey; this.x = CANVAS_WIDTH; this.y = row * TILE_SIZE;
+                this.targetY = this.y;
+                this.width = TILE_SIZE * 0.9; this.height = TILE_SIZE * 0.9;
+                this.health = typeData.health; this.maxHealth = typeData.health;
+                this.speed = typeData.speed; this.image = images[typeData.imageKey];
+                this.isAttacking = false; this.attackTimer = 0;
+                this.attackDamage = typeData.attackDamage; // NEW
+                this.attackInterval = typeData.attackInterval; // NEW
+				this.rowChangeTimer = 0; this.pushCooldown = 0; this.isPushing = false;
+                this.direction = (typeKey === 'BACK_MOWER') ? -1 : 1;
+				this._hasSplit = false
+                this.isLeaving = false;
+                this.isHypnotized = false;
+                this.attackDamage = typeData.attackDamage; // NEW
+                this.attackInterval = typeData.attackInterval; // NEW
+                this.isRaged = false; // NEW
+                this.summonTimer = 0;
+                this.lavaAttackTimer = 5 * FPS;
+				this.isCarryingPlant = false; // NEW
+                this.carriedPlantData = null; // NEW
+                this.carriedPlantImage = null; // NEW
+				this.carriedPlantData = null; // NEW
+                this.carriedPlantImage = null; // NEW
+                this.generalTimer = 0; // NEW (for later)
+				this.carriedPlantImage = null; // NEW
+                this.isRaged = false; // NEW
+				this.generalTimer = 0; // NEW
+                if (typeKey === 'DESTROYER_TANK') currentBoss = this;
+            }
+
+            // NEW: Logic for hypnotized mowers
+            updateHypnotized(allEnemies) {
+                const typeData = ENEMY_TYPES[this.typeKey];
+                let potentialTargets = allEnemies.filter(e =>
+                    e !== this &&
+                    !e.isHypnotized &&
+                    Math.max(0, Math.min(ROWS - 1, Math.round(e.y / TILE_SIZE))) === this.row &&
+                    rectsOverlap(this, e)
+                );
+
+                let firstTarget = null;
+                if (potentialTargets.length > 0) {
+                    // Find rightmost target
+                    firstTarget = potentialTargets.reduce((closest, current) => (current.x > closest.x) ? current : closest);
+                }
+
+                if (firstTarget) {
+                    this.isAttacking = true; this.attackTimer++;
+                    if (this.attackTimer >= this.attackInterval) { // USE INSTANCE PROP
+                        firstTarget.takeDamage(this.attackDamage); // USE INSTANCE PROP
+                        this.attackTimer = 0;
+                    } else {
+                    this.isAttacking = false; this.attackTimer = 0;
+                }
+
+                if (!this.isAttacking) {
+                    this.x += this.speed; // Move right
+                }
+                if (this.x > CANVAS_WIDTH) this.health = 0; // Remove if off-screen
+            }
+			}
+
+            // NEW: Hypnotize method
+            hypnotize() {
+                this.isHypnotized = true;
+                this.direction = 1; // Turn around
+                this.isAttacking = false;
+                this.attackTimer = 0;
+                this.targetY = this.y; // Stop changing rows
+                this.rowChangeTimer = 0;
+            }
+
+            update(plantsOnRow, allEnemies) { // NEW: Added allEnemies
+                if(this.isLeaving) {
+                    this.x += this.speed;
+                    const r = Math.floor((this.y + this.height / 2) / TILE_SIZE);
+                    const c = Math.floor((this.x + this.width / 2) / TILE_SIZE);
+                    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
+                    if (this.typeKey === 'FIRE_MOWER') {
+                        if (!isTileBurnt(r, c)) burntTiles.push({ row: r, col: c, timer: 20 * FPS });
+                    }
+                    if (this.typeKey === 'REAPER_MOWER') {
+                         for(let r_offset = -1; r_offset <= 1; r_offset++) {
+                            for(let c_offset = -1; c_offset <= 1; c_offset++) {
+                                const desatR = r + r_offset;
+                                const desatC = c + c_offset;
+                                if (desatR >= 0 && desatR < ROWS && desatC >= 0 && desatC < COLS) {
+                                     if (!isTileDesaturated(desatR, desatC)) desaturatedTiles.push({ row: desatR, col: desatC });
+                                }
+                            }
+                        }
+                    }
+                    return;
+                }
+				
+				if (this.isCarryingPlant) {
+                    this.x += this.speed; // Move right
+                    if (this.x > CANVAS_WIDTH) this.health = 0; // Escaped
+                    return; // Skip all other logic
+                }
+
+                // NEW: Handle hypnotized state
+                if (this.isHypnotized) {
+                    this.updateHypnotized(allEnemies);
+                    return;
+                }
+
+                // NEW: Tiger Mower Buff Logic
+                if (this.typeKey === 'TIGER') {
+                    const baseStats = ENEMY_TYPES.TIGER;
+                    const tigerMowers = allEnemies.filter(e => e.typeKey === 'TIGER' && !e.isHypnotized && e.health > 0);
+                    const tigerCount = tigerMowers.length;
+                    
+                    if (tigerCount > 1) {
+                        const speedBuff = Math.pow(1.25, tigerCount - 1);
+                        const damageBuff = Math.pow(1.25, tigerCount - 1);
+                        this.speed = baseStats.speed * speedBuff;
+                        this.attackDamage = baseStats.attackDamage * damageBuff;
+                    } else {
+                        // Reset to base stats if it's the only one
+                        this.speed = baseStats.speed;
+                        this.attackDamage = baseStats.attackDamage;
+                    }
+                }
+                // END NEW
+                
+                const typeData = ENEMY_TYPES[this.typeKey];
+
+                if (this.typeKey === 'STEALTH') {
+                    if (this.x < (COLS - 1) * TILE_SIZE) {
+                        this.isStealthed = true;
+                    } else {
+                        this.isStealthed = false; // In case it gets pushed back
+                    }
+                }
+                
+                if (typeData.rowChangeInterval) {
+                    this.rowChangeTimer++;
+                    if (this.rowChangeTimer >= typeData.rowChangeInterval) {
+                        let newRow = this.row + [-1, 0, 1][Math.floor(Math.random() * 3)];
+                        newRow = Math.max(0, Math.min(ROWS - 1, newRow));
+                        this.targetY = newRow * TILE_SIZE; this.rowChangeTimer = 0;
+                    }
+                    if (Math.abs(this.targetY - this.y) > 0.5) {
+                        const step = Math.sign(this.targetY - this.y) * (typeData.rowMoveSpeed || 4);
+                        this.y += Math.abs(step) > Math.abs(this.targetY - this.y) ? this.targetY - this.y : step;
+                        if (Math.abs(this.targetY - this.y) <= 1) { this.y = this.targetY; this.row = Math.round(this.y / TILE_SIZE); }
+                    } else { this.y = this.targetY; this.row = Math.round(this.y / TILE_SIZE); }
+                }
+				
+				// Ensure any forced targetY is respected (smooth move even if enemy has no rowChangeInterval)
+				if (Math.abs(this.targetY - this.y) > 0.5) {
+				  const moveSpeed = (ENEMY_TYPES[this.typeKey].rowMoveSpeed || 4);
+				  const step = Math.sign(this.targetY - this.y) * moveSpeed;
+				  this.y += Math.abs(step) > Math.abs(this.targetY - this.y) ? (this.targetY - this.y) : step;
+				  if (Math.abs(this.targetY - this.y) <= 1) {
+					this.y = this.targetY;
+					this.row = Math.round(this.y / TILE_SIZE);
+				  }
+				}
+
+                
+                // NEW: Boss summon logic
+                if (typeData.behavior === 'boss_destroyer') {
+                    this.summonTimer++;
+                    this.lavaAttackTimer++; 
+
+                    // --- CORRECTED: SUMMON LOGIC ---
+                    const summonInterval = typeData.summonInterval || (10 * FPS);
+                    if (this.summonTimer >= summonInterval) {
+                        this.summonTimer = 0;
+                        // Summon 3-5 mowers in random rows
+                        const numToSpawn = 3 + Math.floor(Math.random() * 3);
+                        const spawnTypes = ['CLASSIC', 'STEALTH', 'REAPER_MOWER', 'SPEEDY', 'STONE', 'BACK_MOWER', 'FIRE_MOWER', 'SHIELD_MOWER']; // Added Shield Mower
+                        for (let i = 0; i < numToSpawn; i++) {
+                            const randomType = spawnTypes[Math.floor(Math.random() * spawnTypes.length)];
+                            const randomRow = Math.floor(Math.random() * ROWS);
+                            enemies.push(new Enemy(randomRow, randomType));
+                        }
+                    }
+                    // --- END SUMMON LOGIC ---
+
+                    // --- CORRECTED: Lava Attack Logic ---
+                    const lavaAttackInterval = 15 * FPS; // Every 15 seconds
+                    if (this.lavaAttackTimer >= lavaAttackInterval) {
+                        this.lavaAttackTimer = 0;
+                        const bossRow = Math.max(0, Math.min(ROWS - 1, Math.round(this.y / TILE_SIZE)));
+                        
+                        // Clear the whole row first
+                        lavaTiles = lavaTiles.filter(t => t.row !== bossRow);
+                        burntTiles = burntTiles.filter(t => t.row !== bossRow);
+
+                        for (let c = 0; c < COLS; c++) {
+                            // Add new lava tile
+                            lavaTiles.push({ row: bossRow, col: c, timer: 5 * FPS, burnTimer: 20 * FPS });
+                        }
+                    }
+                    // --- END LAVA LOGIC ---
+                }
+
+				// NEW: General Mower Logic
+                if (typeData.behavior === 'general') {
+                    this.generalTimer++;
+                    const generalData = ENEMY_TYPES[this.typeKey];
+                    
+                    if (this.generalTimer >= (generalData.generalCooldown || 10 * FPS)) {
+                        this.generalTimer = 0;
+                        const targetRow = Math.floor(Math.random() * ROWS);
+                        
+                        // Find all other non-boss, non-general, non-hypnotized mowers
+                        const otherMowers = allEnemies.filter(e => 
+                            e !== this && 
+                            !e.isHypnotized &&
+                            e.typeKey !== 'DESTROYER_TANK' && 
+                            e.typeKey !== 'GENERAL'
+                        );
+                        
+                        otherMowers.forEach(mower => {
+                            mower.targetY = targetRow * TILE_SIZE;
+                            mower.row = targetRow;
+                            mower.rowChangeTimer = 0; // Reset any random move timer
+                        });
+                    }
+                    
+                    // General just moves, doesn't attack
+                    this.x -= this.speed;
+                    if (this.x < -this.width) gameOver("The mowers reached your house!");
+                    return; // Skip all attack logic
+                }
+
+                if (typeData.isPusher) {
+                    if (this.isPushing) {
+                        if (this.pushCooldown > 0) this.pushCooldown--; else this.isPushing = false; return;
+                    }
+                    const plantHit = plantsOnRow.find(p => !p.removed && rectsOverlap(this, p));
+                    if (plantHit) { this.performPushChain(plantHit.row, plantHit.col); this.isPushing = true; this.pushCooldown = 2 * FPS; return;
+                    } else { this.x -= this.speed; }
+                    if (this.x < -this.width) gameOver("The mowers reached your house!"); return;
+                }
+                
+                if (typeData.behavior === 'back_mower') {
+                    if (this.direction === -1) {
+                        this.x -= this.speed;
+                        if (this.x < -this.width * 2) { this.direction = 1; this.speed = typeData.returnSpeed; this.x = -this.width; }
+                        return;
+                    }
+                }
+
+                // --- NEW: Target Finding (includes hypnotized mowers) ---
+                let potentialTargets = [];
+                for (const plant of plantsOnRow) {
+                    if (plant.removed) continue;
+                    if (rectsOverlap(this, plant)) {
+                        if (plant.behavior === 'SPIKE') {
+                            let spikeDmg = PLANT_TYPES[plant.typeKey].damage;
+                            if (plant.isBoosted) spikeDmg *= 5;
+                            this.takeDamage(spikeDmg);
+                        }
+                        // NEW: Also check for DIVERTER
+                        if (plant.isTargetable || plant.behavior === 'DIVERTER' || (typeData.canHitGround && !plant.isTargetable)) {
+                            potentialTargets.push(plant);
+                        }
+                    }
+                }
+                
+                const hypnotizedMowersOnRow = allEnemies.filter(e => 
+                    e.isHypnotized && 
+                    Math.max(0, Math.min(ROWS - 1, Math.round(e.y / TILE_SIZE))) === this.row &&
+                    rectsOverlap(this, e)
+                );
+                potentialTargets = potentialTargets.concat(hypnotizedMowersOnRow);
+
+                let firstTarget = null;
+                if (potentialTargets.length > 0) {
+                    // Find closest (leftmost) target
+                    firstTarget = potentialTargets.reduce((closest, current) => (current.x < closest.x) ? current : closest);
+                }
+                // --- End Target Finding ---
+
+                if (firstTarget && !typeData.isPusher) {
+                    // NEW: Thief Mower Logic
+                    if (typeData.behavior === 'thief') {
+                        this.isCarryingPlant = true;
+                        this.carriedPlantData = { typeKey: firstTarget.typeKey }; // Store what it was
+                        this.carriedPlantImage = firstTarget.image; // Store the image
+                        firstTarget.remove(true); // Remove plant (true = no death effects)
+                        this.direction = 1; // Turn around
+                        this.isAttacking = false;
+                        return; // Stop further updates
+                    }
+                    // END NEW
+
+                    // NEW: Kamikaze Mower Logic
+                    if (typeData.behavior === 'kamikaze') {
+                        this.explode(firstTarget);
+                        this.isAttacking = true; // Prevents moving
+                        return; // Stop further updates
+                    }
+                    // END NEW
+
+                    this.isAttacking = true; this.attackTimer++;
+                    if (this.attackTimer >= this.attackInterval) { // USE INSTANCE PROP
+                        
+                        // NEW: Check for hypnosis *before* dealing damage
+                        if (firstTarget.isHypnotizer && firstTarget.health - this.attackDamage <= 0) { // USE INSTANCE PROP
+                            // MODIFIED: Added immunity check
+                            if (this.typeKey !== 'SKULLCRUSHER' && this.typeKey !== 'DESTROYER_TANK') {
+                                this.hypnotize();
+                            }
+                        }
+
+                        if (typeData.behavior === 'reaper') {
+                            const plantData = PLANT_TYPES[firstTarget.typeKey];
+                            const canBeSlowed = plantData && (plantData.shotLimit || plantData.productionLimit);
+                            if (canBeSlowed && !firstTarget.isSlowed) { firstTarget.isSlowed = true; firstTarget.usageCount = plantData.shotLimit || plantData.productionLimit || firstTarget.usageCount; } 
+                            else { firstTarget.takeDamage(this.attackDamage); } // USE INSTANCE PROP
+                        } else if (this.typeKey === 'FIRE_MOWER' && firstTarget.isTargetable && firstTarget.health - this.attackDamage <= 0) { // MODIFIED: Check if it's a plant via isTargetable
+                            if (!isTileBurnt(firstTarget.row, firstTarget.col)) burntTiles.push({ row: firstTarget.row, col: firstTarget.col, timer: 15 * FPS });
+                            firstTarget.takeDamage(this.attackDamage); // USE INSTANCE PROP
+                        } else { firstTarget.takeDamage(this.attackDamage); } // USE INSTANCE PROP
+                        this.attackTimer = 0;
+                    }
+                } else { this.isAttacking = false; this.attackTimer = 0; }
+
+                const moveDir = (typeData.behavior === 'back_mower' && this.direction === 1) ? 1 : -1;
+                if (!this.isAttacking) { this.x += this.speed * moveDir; }
+                if (this.x < -this.width) gameOver("The mowers reached your house!");
+                if (this.x > CANVAS_WIDTH) this.health = 0;
+            }
+            performPushChain(row, col) {
+                const pushPlantChain = (r, c) => {
+                    if (c < 0) return;
+                    const plant = gameGrid[r][c]; if (!plant) return;
+                    const destCol = c - 1;
+                    if (destCol < 0) { plant.remove(); return; } 
+                    const blocking = gameGrid[r][destCol];
+                    if (blocking) pushPlantChain(r, destCol);
+                    if (gameGrid[r][destCol] == null) {
+                        gameGrid[r][c] = null; plant.col = destCol; plant.x = destCol * TILE_SIZE; gameGrid[r][destCol] = plant;
+                    } else { plant.remove(); }
+                };
+                pushPlantChain(row, col);
+            }
+            // --- MODIFIED: Added damageType and Shield Mower logic ---
+            takeDamage(amount, damageType = 'normal') { 
+                const typeData = ENEMY_TYPES[this.typeKey];
+                if (typeData.zapResistance && (damageType === 'zap' || damageType === 'heavy_zap')) {
+                    amount *= (1 - typeData.zapResistance);
+                }
+
+                this.health -= amount; 
+                
+				if (!this.isRaged && this.health <= this.maxHealth / 2) {
+                    if (typeData.behavior === 'rage') {
+                        this.isRaged = true;
+                        this.speed *= 2;
+                        this.attackDamage *= 2;
+                    }
+                }
+				
+                if (this.health <= 0) {
+                    // NEW: Splitter Mower Logic
+                    // --- SPLITTER: spawn 3 minis exactly once ---
+					if (typeData.behavior === 'splitter' && !this._hasSplit) {
+						this._hasSplit = true; // prevent re-spawning
+						for (let i = 0; i < 3; i++) {
+							const mini = new Enemy(this.row, 'MINI_MOWER');
+
+							// place the mini at the splitter's death pose
+							mini.x = this.x;
+							mini.y = this.y;
+							mini.targetY = mini.y;
+							mini.row = this.row;
+							mini.direction = this.direction;
+
+							// tiny visual separation (optional — remove if you want exact overlap)
+							mini.x += (i - 1) * Math.max(2, Math.floor(mini.width * 0.2));
+
+							enemies.push(mini);
+						}
+					}
+
+                    // END NEW
+
+					if (this.isCarryingPlant && this.carriedPlantData) {
+                        const dropRow = Math.max(0, Math.min(ROWS - 1, Math.round(this.y / TILE_SIZE)));
+                        const dropCol = Math.max(0, Math.min(COLS - 1, Math.round(this.x / TILE_SIZE)));
+                        
+                        if (gameGrid[dropRow] && gameGrid[dropRow][dropCol] === null) {
+                            // Tile is free, plant the plant
+                            const newPlant = new Plant(dropRow, dropCol, this.carriedPlantData.typeKey);
+                            plants.push(newPlant);
+                            gameGrid[dropRow][dropCol] = newPlant;
+                        } else {
+                            // Tile is occupied, drop a seed
+                            seeds++;
+                            floatingIcons.push(new FloatingIcon(this.x, this.y, 'seed'));
+                        }
+                    }
+
+                    if(this === currentBoss) currentBoss = null;
+                    currency += ENEMY_TYPES[this.typeKey].moneyOnDrop || 0;
+                    if (Math.random() < 0.03) {
+                        boosts++;
+                        floatingIcons.push(new FloatingIcon(this.x, this.y, 'boost'));
+                    }
+                    updateTopBar();
+                }
+            }
+			
+			explode(targetPlant) {
+                const typeData = ENEMY_TYPES[this.typeKey];
+                const explosionDamage = typeData.explosionDamage || 1500;
+                const explosionCenterR = targetPlant.row;
+                const explosionCenterC = targetPlant.col;
+                const visualSize = TILE_SIZE * 1.5; // 3x3 visual
+                
+                // Add visual explosion
+                explosions.push(new Explosion(targetPlant.x + targetPlant.width/2, targetPlant.y + targetPlant.height/2, visualSize, 0, 'fire'));
+
+                for (let r_offset = -1; r_offset <= 1; r_offset++) {
+                    for (let c_offset = -1; c_offset <= 1; c_offset++) {
+                        const r = explosionCenterR + r_offset;
+                        const c = explosionCenterC + c_offset;
+                        if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                            const plantOnTile = gameGrid[r][c];
+                            if (plantOnTile) {
+                                plantOnTile.takeDamage(explosionDamage);
+                            }
+                        }
+                    }
+                }
+                
+                this.health = 0; // Kills the kamikaze mower
+            }
+            draw() {
+                ctx.save(); // Save 1 (for alpha)
+
+                let activeFilter = ''; // NEW
+                if (this.typeKey === 'STEALTH' && this.isStealthed) {
+                    ctx.globalAlpha = 0.15;
+                }
+                
+                if (this.isHypnotized) {
+                    activeFilter += 'hue-rotate(270deg) saturate(3) brightness(1.2) '; // NEW
+                }
+                if (this.isRaged) { // NEW
+                    activeFilter += 'saturate(5) brightness(1.5) hue-rotate(330deg) '; // NEW
+                }
+                if (activeFilter) { // NEW
+                    ctx.filter = activeFilter; // NEW
+                }
+                
+                // --- BUG FIX: Flip image if hypnotized, leaving, or back_mower returning ---
+                const isMovingRight = (this.isHypnotized && this.direction === 1) || 
+                                      (this.typeKey === 'BACK_MOWER' && this.direction === 1) ||
+                                      (this.isLeaving && this.direction === 1);
+
+                if (isMovingRight) {
+                // --- END FIX ---
+
+                    // --- BUG FIX: Added Tank/Skullcrusher attack animation logic for flipped mowers ---
+                    let yOffset = 0; let rotation = 0;
+                    if ((this.typeKey === 'TANK' || this.typeKey === 'SKULLCRUSHER' || this.typeKey === 'DESTROYER_TANK') && this.isAttacking) {
+                        const attackInterval = ENEMY_TYPES[this.typeKey].attackInterval;
+                        const attackCycle = (this.attackTimer / attackInterval);
+                        if (attackCycle > 0.8) { yOffset = -15 * Math.sin((attackCycle - 0.8) / 0.2 * Math.PI); }
+                        else if (attackCycle < 0.15) { rotation = 0.4 * Math.sin(attackCycle / 0.15 * Math.PI); }
+                    }
+                    // --- END FIX ---
+
+                    ctx.save(); // Save 2 (for flip/transform)
+                    ctx.translate(this.x + this.width, this.y); // Go to top-right
+                    ctx.scale(-1, 1); // Flip horizontally
+
+                    // Now we are in a flipped coordinate system, where (0,0) is the top-left of the image
+                    // We need to translate to the center of the image, rotate, and draw
+                    ctx.translate(this.width / 2, this.height / 2);
+                    ctx.rotate(rotation);
+                    drawImageOrFallback(ctx, this.image, -this.width / 2, -this.height / 2 + yOffset, this.width, this.height);
+					
+					if (this.isCarryingPlant && this.carriedPlantImage) {
+                        drawImageOrFallback(ctx, this.carriedPlantImage, -this.width / 2 + (this.width*0.1), -this.height / 2 - (this.height*0.3), this.width * 0.8, this.height * 0.8);
+                    }
+                    
+                    ctx.restore(); // restore from flip/transform
+                    
+                    ctx.filter = 'none'; // Reset filter for health bar
+                    drawHealthBar(ctx, this.x, this.y, this.width, this.height, this.health, this.maxHealth);
+                    
+                    ctx.restore(); // Restore 1 (from alpha)
+                    return; // exit draw early
+                }
+                
+                let yOffset = 0; let rotation = 0;
+                if ((this.typeKey === 'TANK' || this.typeKey === 'SKULLCRUSHER' || this.typeKey === 'DESTROYER_TANK') && this.isAttacking) {
+                    const attackInterval = ENEMY_TYPES[this.typeKey].attackInterval;
+                    const attackCycle = (this.attackTimer / attackInterval);
+                    if (attackCycle > 0.8) { yOffset = -15 * Math.sin((attackCycle - 0.8) / 0.2 * Math.PI); }
+                    else if (attackCycle < 0.15) { rotation = 0.4 * Math.sin(attackCycle / 0.15 * Math.PI); }
+                }
+
+                ctx.save(); // Save 2 (for transform)
+                if (this.typeKey === 'PUSH_MOWER' && this.isPushing) {
+                    const pulseAmount = Math.sin((this.pushCooldown || 0) * 0.2) * 0.06 + 1;
+                    ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+                    ctx.scale(pulseAmount, pulseAmount);
+                    drawImageOrFallback(ctx, this.image, -this.width / 2, -this.height / 2, this.width, this.height);
+                } else {
+                    ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+                    ctx.rotate(rotation);
+                    drawImageOrFallback(ctx, this.image, -this.width / 2, -this.height / 2 + yOffset, this.width, this.height);
+					
+					if (this.isCarryingPlant && this.carriedPlantImage) {
+                        drawImageOrFallback(ctx, this.carriedPlantImage, -this.width / 2 + (this.width*0.1), -this.height / 2 - (this.height*0.3), this.width * 0.8, this.height * 0.8);
+                    }
+                }
+                ctx.restore(); // Restore 2 (from transform)
+
+                ctx.filter = 'none'; // Reset filter for health bar
+                drawHealthBar(ctx, this.x, this.y, this.width, this.height, this.health, this.maxHealth);
+                
+                ctx.restore(); // Restore 1 (from alpha)
+            }
+        }
+
+        class Projectile {
+            constructor(x, y, row, typeKey, direction, target = null) {
+                const typeData = PROJECTILE_TYPES[typeKey];
+                this.x = x; this.y = y; this.row = row; this.typeKey = typeKey;
+                this.width = typeData.width; this.height = typeData.height; this.speed = typeData.speed; this.damage = typeData.damage; this.image = images[typeData.imageKey];
+                this.direction = direction || 1;
+                this.isOffscreen = false; this.hasHit = false;
+                this.target = target;
+            }
+            update() {
+                if(this.target) {
+                    // Check if target is "alive"
+                    let targetIsAlive = this.target.health > 0;
+                    
+                    // Special case for win-anim dummy target
+                    if (this.target.isDummyTarget && this.target.health <= 0) {
+                        targetIsAlive = false;
+                    }
+                    
+                    if (!targetIsAlive) {
+                        // Target is dead or gone
+                        this.hasHit = true; // Mark as "hit" to be cleaned up
+                        const typeData = PROJECTILE_TYPES[this.typeKey];
+                        
+                        // Explode on target death if explosive
+                        if (typeData.isExplosive) {
+                            // --- MODIFIED: Pass damageType ---
+                            let damageType = (this.typeKey === 'HEAVY_ZAP_ATTACK') ? 'heavy_zap' : 'normal';
+                            explosions.push(new Explosion(this.x, this.y, typeData.explosionRadius, typeData.damage, typeData.explosionColor || 'orange', damageType));
+                            // --- END MODIFIED ---
+                        }
+
+                        this.isOffscreen = true; // Still mark for removal
+                        return;
+                    } 
+                    
+                    // --- Homing Logic ---
+                    const targetX = this.target.x + (this.target.width || 0) / 2;
+                    const targetY = this.target.y + (this.target.height || 0) / 2;
+                    const angle = Math.atan2(targetY - this.y, targetX - this.x);
+                    this.x += Math.cos(angle) * this.speed;
+                    this.y += Math.sin(angle) * this.speed;
+                    
+                    // --- MODIFIED: Hit Logic for damage types and dummy targets ---
+                    if (rectsOverlap(this, this.target)) {
+                        this.hasHit = true;
+                        const typeData = PROJECTILE_TYPES[this.typeKey]; // Get type data
+                        
+                        if (this.typeKey === 'HEAVY_ZAP_BOOST' && this.target.isBoosted !== undefined) {
+                            // It's a boost orb hitting a plant
+                            applyBoostToPlant(this.target);
+                        } else if (this.target.isDummyTarget) {
+                            this.target.health = 0; // "kill" dummy
+                            if (typeData.isExplosive) {
+                                // Visual-only explosion
+                                explosions.push(new Explosion(this.target.x + this.target.width / 2, this.target.y + this.target.height / 2, typeData.explosionRadius, 0, typeData.explosionColor || 'orange'));
+                            }
+                        } else if (this.target.takeDamage) {
+                            // It's a normal projectile hitting an enemy
+                            let damageType = 'normal';
+                            if (this.typeKey === 'ZAP') damageType = 'zap';
+                            if (this.typeKey === 'HEAVY_ZAP_ATTACK') damageType = 'heavy_zap';
+
+                            if (typeData.isExplosive) {
+                                explosions.push(new Explosion(this.target.x + this.target.width / 2, this.target.y + this.target.height / 2, typeData.explosionRadius, typeData.damage, typeData.explosionColor || 'orange', damageType));
+                            } else {
+                                this.target.takeDamage(this.damage, damageType);
+                            }
+                        }
+                    }
+                    // --- END MODIFIED ---
+                    
+                } else {
+                    // Non-homing projectile
+                    this.x += this.speed * this.direction;
+                }
+                
+                if ((this.direction === 1 && this.x > CANVAS_WIDTH) || (this.direction === -1 && this.x < -this.width)) this.isOffscreen = true;
+            }
+            draw() { drawImageOrFallback(ctx, this.image, this.x, this.y, this.width, this.height); }
+        }
+
+        // --- MODIFIED: Added damageType ---
+        class Explosion {
+            constructor(x, y, radius, damage, color = 'orange', damageType = 'normal') {
+                this.x = x; this.y = y; this.maxRadius = radius; this.damage = damage;
+                this.duration = 30; this.timer = this.duration; this.isAlive = true;
+                this.color = color;
+                this.damageType = damageType; // Store it
+                if(this.damage > 0) this.applyRadiusDamage();
+            }
+            applyRadiusDamage() {
+                enemies.forEach(enemy => {
+                    const distance = Math.sqrt(Math.pow(this.x - (enemy.x + enemy.width / 2), 2) + Math.pow(this.y - (enemy.y + enemy.height / 2), 2));
+                    // --- MODIFIED: Pass damageType ---
+                    if (distance <= this.maxRadius) enemy.takeDamage(this.damage, this.damageType);
+                });
+            }
+            // --- END MODIFIED ---
+            update() { this.timer--; if (this.timer <= 0) this.isAlive = false; }
+            draw() {
+                const progress = 1 - (this.timer / this.duration);
+                const currentRadius = this.maxRadius * progress; const opacity = 1 - progress;
+                
+                let fill = `rgba(255, 165, 0, ${opacity * 0.8})`;
+                let stroke = `rgba(255, 69, 0, ${opacity})`;
+                
+                if (this.color === 'fire') {
+                    fill = `rgba(255, 100, 0, ${opacity * 0.8})`;
+                    stroke = `rgba(255, 200, 0, ${opacity})`;
+                } else if (this.color === 'zap') {
+                    fill = `rgba(0, 255, 255, ${opacity * 0.7})`;
+                    stroke = `rgba(255, 255, 255, ${opacity})`;
+                }
+
+                ctx.beginPath(); ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+                ctx.fillStyle = fill; ctx.fill();
+                ctx.strokeStyle = stroke; ctx.lineWidth = 5; ctx.stroke();
+            }
+        }
+        
+        // --- NEW: Beam class for Laser Lilac ---
+        class Beam {
+            constructor(x, y, row, duration, damage, plant) {
+                this.x = x; this.y = y; this.row = row;
+                this.duration = duration;
+                this.timer = duration;
+                this.damage = damage;
+                this.plant = plant; // To check for boost
+                this.isAlive = true;
+                this.width = CANVAS_WIDTH - x;
+                this.height = TILE_SIZE * 0.2;
+            }
+            update() {
+                this.timer--;
+                if (this.timer <= 0) this.isAlive = false;
+
+                let currentDamage = this.damage;
+                if (this.plant && this.plant.isBoosted) currentDamage *= 5;
+                
+                // Find all enemies in the row
+                const enemiesInRow = enemies.filter(e =>
+                    !e.isHypnotized &&
+                    Math.max(0, Math.min(ROWS - 1, Math.round(e.y / TILE_SIZE))) === this.row
+                );
+
+                let beamBlocked = false;
+                
+                // Sort enemies by X to find shield mowers first
+                enemiesInRow.sort((a, b) => a.x - b.x);
+
+                for (const enemy of enemiesInRow) {
+                    if (beamBlocked) break; // Beam was stopped
+
+                    const beamRect = { x: this.x, y: this.y, width: this.width, height: this.height };
+                    if (rectsOverlap(beamRect, enemy)) {
+                        
+                        // Shield Mower logic
+                        if (enemy.typeKey === 'SHIELD_MOWER') {
+                            beamBlocked = true;
+                            this.width = enemy.x - this.x; // Visually stop the beam
+                            // Shield mower takes no damage from beam
+                        } else {
+                            // Damage enemy (damage is per-frame, so it's low)
+                            enemy.takeDamage(currentDamage);
+                        }
+                    }
+                }
+            }
+            draw() {
+                if (!this.isAlive) return;
+                const progress = this.timer / this.duration;
+                // Use a sine wave for a quick pulse effect
+                const alpha = Math.sin(progress * Math.PI) * 0.7; // Fades in and out
+                
+                let grad = ctx.createLinearGradient(this.x, this.y, this.x + this.width, this.y);
+                grad.addColorStop(0, `rgba(255, 0, 255, ${alpha})`);
+                grad.addColorStop(0.8, `rgba(255, 0, 255, ${alpha * 0.5})`);
+                grad.addColorStop(1, `rgba(255, 0, 255, 0)`);
+                
+                ctx.fillStyle = grad;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                // Core
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 1.2})`;
+                ctx.fillRect(this.x, this.y + this.height * 0.3, this.width, this.height * 0.4);
+            }
+        }
+        // --- END NEW ---
+
+        class FloatingIcon {
+            constructor(startX, startY, type) {
+                this.x = startX; this.y = startY;
+                this.alpha = 1; this.isAlive = true;
+                this.type = type;
+                if(type === 'currency') {
+                    this.targetElement = currencyDisplay;
+                    this.text = '$';
+                } else if(type === 'seed') {
+                    this.targetElement = seedsDisplay;
+                    this.image = images.icon_seed;
+                } else {
+                    this.targetElement = boostsDisplay;
+                    this.image = images.icon_boost;
+                }
+            }
+            update() {
+                const rect = this.targetElement.getBoundingClientRect();
+                const gameRect = canvas.getBoundingClientRect();
+                const targetX = (rect.left - gameRect.left) + rect.width / 2 + CANVAS_WIDTH;
+                const targetY = (rect.top - gameRect.top) + rect.height / 2;
+                
+                this.x += (targetX - this.x) * 0.08;
+                this.y += (targetY - this.y) * 0.08;
+                
+                if (Math.abs(targetX - this.x) < 10 && Math.abs(targetY - this.y) < 10) {
+                    this.isAlive = false;
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                if(this.type === 'currency') {
+                    ctx.font = 'bold 30px Arial';
+                    ctx.fillStyle = '#ffd700';
+                    ctx.fillText(this.text, this.x, this.y);
+                } else {
+                    drawImageOrFallback(ctx, this.image, this.x, this.y, 30, 30);
+                }
+                ctx.restore();
+            }
+        }
+
+        // === INITIALIZATION ===
+        function init() {
+            canvas.width = CANVAS_WIDTH; canvas.height = CANVAS_HEIGHT;
+            for (let r = 0; r < ROWS; r++) { gameGrid[r] = []; for (let c = 0; c < COLS; c++) gameGrid[r][c] = null; }
+            setupUI();
+            preloadImages(IMAGE_SOURCES).then(loadedImages => {
+                images = loadedImages; playButton.style.opacity = 1; playButton.style.cursor = 'pointer';
+            }).catch(err => { console.error("Error loading images:", err); playButton.style.opacity = 1; playButton.style.cursor = 'pointer'; });
+            playButton.addEventListener('click', startGame);
+            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('contextmenu', handleCanvasRightClick);
+            window.addEventListener('click', (e) => { if (!contextMenu.contains(e.target)) hideContextMenu(); });
+            pauseButton.addEventListener('click', togglePause);
+            uprootButton.addEventListener('click', toggleUproot);
+			twoxSpeedButton.addEventListener('click', toggleTwoxSpeed); // Fixed variable name was applied up top
+			
+			// --- NEW: Assign Shop Variables INSIDE init() ---
+            shopButton = document.getElementById('shop-button');
+            shopOverlay = document.getElementById('shop-modal-overlay');
+            shopCloseButton = document.getElementById('shop-close-button');
+            shopItems = document.getElementById('shop-items');
+            shopTransactionScreen = document.getElementById('shop-transaction-screen');
+            shopProgressBar = document.getElementById('shop-progress-bar');
+            shopCompleteScreen = document.getElementById('shop-complete-screen');
+            shopCompleteMessage = document.getElementById('shop-complete-message');
+            shopCompleteOkButton = document.getElementById('shop-complete-ok-button');
+            
+            // Ability Buttons
+            rowFlareButton = document.getElementById('row-flare-button');
+            rowFlareCooldown = document.getElementById('row-flare-cooldown');
+            wallButton = document.getElementById('wall-button');
+            wallCooldown = document.getElementById('wall-cooldown');
+			
+            // Shop Listeners
+            shopButton.addEventListener('click', openShop);
+            shopCloseButton.addEventListener('click', closeShop);
+            shopOverlay.addEventListener('click', (e) => {
+                // Close only if clicking the dark overlay, not the content
+                if (e.target === shopOverlay) closeShop();
+            });
+            shopCompleteOkButton.addEventListener('click', closeShop);
+            
+            // Add listeners for all buy buttons
+            document.querySelectorAll('.shop-buy-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const item = e.target.closest('.shop-item');
+                    const cost = item.dataset.cost;
+                    const perk = item.dataset.perk;
+                    startFakeTransaction(cost, perk);
+                });
+            });
+        }
+
+        function setupUI() {
+            updateTopBar();
+            waveDisplay.textContent = `Wave: ${currentWave}/${WAVE_DATA.length}`;
+            plantMenu.innerHTML = '';
+            for (const typeKey in PLANT_TYPES) {
+                const plant = PLANT_TYPES[typeKey];
+                const card = document.createElement('div'); card.className = 'plant-card'; card.dataset.type = typeKey;
+                const imgSrc = IMAGE_SOURCES[plant.imageKey] || '';
+                card.innerHTML = `<img src="${imgSrc}" onerror="this.style.background='purple'; this.style.borderRadius='5px'; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';"><div class="info"><span class="name">${plant.name}</span><span class="cost">$${plant.cost}</span></div>`;
+                card.addEventListener('click', () => selectPlant(typeKey));
+                plantMenu.appendChild(card);
+            }
+        }
+
+        function startGame() { startScreen.style.display = 'none'; gameContainer.style.display = 'flex'; gameRunning = true; gameLoop(); }
+
+        // === GAME LOOP & STATE MANAGEMENT ===
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            drawLawn();
+			if (isFoggy) drawFog();
+            
+            if (isGameOverAnimation) {
+                runGameOverAnimation();
+            } else if (isWaveClearAnimation) { // NEW
+                runWaveClearAnimation();
+            } else if (!isPaused) {
+                for (let i = 0; i < gameSpeed; i++) {
+                    // Don't run logic if we paused during a 2x speed frame
+                    if (isPaused) break;
+                    updateGameObjects(); 
+                    handleCollisions(); 
+                    cleanupArrays(); 
+                    manageWaves();
+                }
+            }
+
+            plants.forEach(p => p.draw()); enemies.forEach(e => e.draw()); 
+            projectiles.forEach(p => p.draw());
+            beams.forEach(b => b.draw()); // NEW: Draw beams
+            explosions.forEach(e => e.draw());
+            floatingIcons.forEach(i => i.draw());
+			if (isFoggy) drawFog();
+            
+            // NEW: Draw boss health bar
+            if (currentBoss) {
+                drawBossHealthBar();
+            }
+            
+            drawOverlay();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function manageWaves() {
+            if (!waveInProgress && !isWaveClearAnimation) { // NEW: Don't count down during anim
+                waveTimer--;
+                if (waveTimer <= 0) startNextWave();
+            } else if (waveInProgress) { // Only spawn if wave is in progress
+                spawnTimer++;
+                if (spawnTimer >= 1.5 * FPS && enemiesToSpawn.length > 0) { spawnEnemyFromQueue(); spawnTimer = 0; }
+                
+                // MODIFIED: Check for active mowers (not hypnotized)
+                const activeMowers = enemies.filter(e => !e.isHypnotized).length;
+                if (enemiesToSpawn.length === 0 && activeMowers === 0) { // Wave just ended
+                    waveInProgress = false; 
+                    
+                    if (currentWave >= WAVE_DATA.length) {
+                        // We just beat the final wave, start celebration!
+                        startWaveClearAnimation(); 
+                    } else {
+                        // Not the final wave, just move on
+                        waveTimer = 4 * FPS;
+                        // Clear out any remaining hypnotized mowers
+                        enemies.forEach(e => {
+                            if(e.isHypnotized) e.health = 0; 
+                        });
+                    }
+                }
+            }
+        }
+
+        // NEW: Wave Clear Animation
+        function startWaveClearAnimation() {
+            if (isWaveClearAnimation) return; 
+            isWaveClearAnimation = true;
+            waveClearTimer = 0;
+            waveClearPhase = 'WALLS_JUMP1';
+            
+            // NEW: Calculate score before plants are removed
+            if (currentWave >= WAVE_DATA.length) { // Only calc on final wave
+                finalScore = currency;
+                plants.forEach(p => { finalScore += PLANT_TYPES[p.typeKey].cost * 2; });
+            }
+            
+            // Give each plant animation properties
+            plants.forEach(p => {
+                p.anim = {
+                    state: 'IDLE',
+                    timer: 0,
+                    origY: p.y,
+                    velY: 0
+                };
+            });
+            // Stagger wall jumps
+            plants.filter(p => p.behavior === 'WALL' || p.isHypnotizer || p.behavior === 'DIVERTER').forEach((p, index) => { // Added Diverter
+                p.anim.state = 'START_JUMP1';
+                p.anim.timer = -index * 5; // Stagger by 5 frames
+            });
+        }
+
+        // NEW: Wave Clear Animation Runner
+        function runWaveClearAnimation() {
+            waveClearTimer++;
+            let allAnimsDone = true;
+            // Added Diverter
+            const wallPlants = plants.filter(p => p.behavior === 'WALL' || p.isHypnotizer || p.behavior === 'DIVERTER');
+            const shooterPlants = plants.filter(p => p.behavior === 'SHOOTER');
+            const zapperPlants = plants.filter(p => p.behavior === 'ZAPPER');
+            const heavyZapperPlants = plants.filter(p => p.behavior === 'HEAVY_ZAPPER'); // NEW
+            const beamPlants = plants.filter(p => p.behavior === 'BEAM'); // NEW
+            const spikePlants = plants.filter(p => p.behavior === 'SPIKE'); // NEW
+            const producerPlants = plants.filter(p => p.behavior === 'PRODUCER'); // NEW
+
+
+            if (waveClearPhase === 'WALLS_JUMP1') {
+                allAnimsDone = true;
+                wallPlants.forEach(p => {
+                    p.anim.timer++;
+                    if (p.anim.state === 'START_JUMP1' && p.anim.timer >= 0) {
+                        p.anim.state = 'JUMPING1';
+                        p.anim.velY = -5; // Initial jump velocity
+                    }
+                    if (p.anim.state === 'JUMPING1') {
+                        allAnimsDone = false;
+                        p.y += p.anim.velY;
+                        p.anim.velY += 0.5; // Gravity
+                        if (p.y >= p.anim.origY) {
+                            p.y = p.anim.origY;
+                            p.anim.state = 'START_JUMP2';
+                            p.anim.timer = 0;
+                        }
+                    }
+                });
+                if (allAnimsDone && wallPlants.length === 0) allAnimsDone = true; // Skip if no walls
+                if (allAnimsDone) {
+                    waveClearPhase = 'WALLS_JUMP2';
+                    wallPlants.forEach((p, index) => { p.anim.timer = -index * 5; }); // Stagger
+                }
+            } 
+            else if (waveClearPhase === 'WALLS_JUMP2') {
+                allAnimsDone = true;
+                wallPlants.forEach(p => {
+                    p.anim.timer++;
+                    if (p.anim.state === 'START_JUMP2' && p.anim.timer >= 0) {
+                        p.anim.state = 'JUMPING2';
+                        p.anim.velY = -10; // 2x higher jump
+                    }
+                    if (p.anim.state === 'JUMPING2') {
+                        allAnimsDone = false;
+                        p.y += p.anim.velY;
+                        p.anim.velY += 0.5; // Gravity
+                        if (p.y >= p.anim.origY) {
+                            p.y = p.anim.origY;
+                            p.anim.state = 'START_JUMP3';
+                            p.anim.timer = 0;
+                        }
+                    }
+                });
+                if (allAnimsDone && wallPlants.length === 0) allAnimsDone = true; // Skip if no walls
+                if (allAnimsDone) {
+                    waveClearPhase = 'WALLS_JUMP3_EXIT';
+                    wallPlants.forEach((p, index) => { p.anim.timer = -index * 5; }); // Stagger
+                }
+            } 
+            else if (waveClearPhase === 'WALLS_JUMP3_EXIT') {
+                allAnimsDone = true;
+                wallPlants.forEach(p => {
+                    p.anim.timer++;
+                    if (p.anim.state === 'START_JUMP3' && p.anim.timer >= 0) {
+                        p.anim.state = 'JUMPING3_EXIT';
+                        p.anim.velY = -10; // Same high jump
+                    }
+                    if (p.anim.state === 'JUMPING3_EXIT') {
+                        allAnimsDone = false;
+                        p.y += p.anim.velY;
+                        p.anim.velY += 0.5; // Gravity
+                        p.x += 4; // Move right
+                        if (p.x > CANVAS_WIDTH) {
+                            p.anim.state = 'DONE';
+                            p.remove(true); // MODIFIED: Pass flag
+                        }
+                    }
+                    if (p.anim.state !== 'DONE' && !p.removed) allAnimsDone = false;
+                 });
+                if (allAnimsDone && wallPlants.length === 0) allAnimsDone = true; // Skip if no walls
+                if (allAnimsDone) {
+                    waveClearPhase = 'SHOOTERS_RAPIDFIRE';
+                    shooterPlants.forEach((p, index) => {
+                         p.anim.state = 'START_RAPIDFIRE';
+                         p.anim.timer = -index * 5; // Stagger
+                    });
+                }
+            }
+            else if (waveClearPhase === 'SHOOTERS_RAPIDFIRE') {
+                allAnimsDone = true;
+                shooterPlants.forEach(p => {
+                    p.anim.timer++;
+                    if (p.anim.state === 'START_RAPIDFIRE' && p.anim.timer >= 0) {
+                        p.anim.state = 'RAPIDFIRE';
+                        p.anim.timer = 0; // Reset timer
+                    }
+                    if (p.anim.state === 'RAPIDFIRE') {
+                        allAnimsDone = false;
+                        let interval = (PLANT_TYPES[p.typeKey].shootInterval || 180) / 10;
+                        if (p.anim.timer % Math.max(2, Math.floor(interval)) === 0) {
+                            p.shoot();
+                        }
+                        if (p.anim.timer > 120) { // Fire for 2 seconds
+                            p.anim.state = 'EXPLODE';
+                            explosions.push(new Explosion(p.x + p.width/2, p.y + p.height/2, TILE_SIZE * 1.5, 0, 'fire')); // MODIFIED: Color
+                            explosions.push(new Explosion(p.x + p.width/2, p.y + p.height/2, TILE_SIZE * 1, 0, 'orange')); // MODIFIED: Color
+                            p.remove(true); // MODIFIED: Pass flag
+                        }
+                    }
+                    if (p.anim.state !== 'EXPLODE' && p.anim.state !== 'DONE' && !p.removed) allAnimsDone = false;
+                });
+                if (allAnimsDone && shooterPlants.length === 0) allAnimsDone = true; // Skip
+                if (allAnimsDone) {
+                    waveClearPhase = 'BEAM_PLANTS_FIRE'; // NEW: Transition to Lilacs
+                    beamPlants.forEach((p, index) => {
+                         p.anim.state = 'START_FIRE';
+                         p.anim.timer = -index * 5; // Stagger
+                    });
+                }
+            }
+            // --- NEW: Laser Lilac Animation Phase ---
+            else if (waveClearPhase === 'BEAM_PLANTS_FIRE') {
+                 allAnimsDone = true;
+                 beamPlants.forEach(p => {
+                    p.anim.timer++;
+                    if (p.anim.state === 'START_FIRE' && p.anim.timer >= 0) {
+                        p.anim.state = 'FIRING';
+                        p.anim.timer = 0;
+                    }
+                    if (p.anim.state === 'FIRING') {
+                        allAnimsDone = false;
+                        let interval = (PLANT_TYPES[p.typeKey].shootInterval || 300) / 10;
+                        
+                        if (p.anim.timer % Math.max(5, Math.floor(interval)) === 0) {
+                            const pY_center = p.y + p.height / 2;
+                            beams.push(new Beam(p.x + p.width - 10, pY_center - (TILE_SIZE * 0.1), p.row, PLANT_TYPES[p.typeKey].beamDuration, 0, p)); // No damage
+                        }
+
+                         if (p.anim.timer > 120) { // Fire for 2 seconds
+                            p.anim.state = 'EXPLODE';
+                            explosions.push(new Explosion(p.x + p.width/2, p.y + p.height/2, TILE_SIZE * 1.5, 0, 'zap'));
+                            p.remove(true);
+                        }
+                    }
+                    if (p.anim.state !== 'EXPLODE' && p.anim.state !== 'DONE' && !p.removed) allAnimsDone = false;
+                 });
+                 if (allAnimsDone && beamPlants.length === 0) allAnimsDone = true; // Skip
+                 if (allAnimsDone) {
+                    waveClearPhase = 'ZAPPERS_ZAP';
+                    zapperPlants.forEach((p, index) => {
+                         p.anim.state = 'START_ZAP';
+                         p.anim.timer = -index * 5; // Stagger
+                    });
+                }
+            }
+            // --- END NEW ---
+            else if (waveClearPhase === 'ZAPPERS_ZAP') {
+                 allAnimsDone = true;
+                 zapperPlants.forEach(p => {
+                    p.anim.timer++;
+                    if (p.anim.state === 'START_ZAP' && p.anim.timer >= 0) {
+                        p.anim.state = 'ZAPPING';
+                        p.anim.timer = 0;
+                    }
+                    if (p.anim.state === 'ZAPPING') {
+                        allAnimsDone = false;
+                        let interval = (PLANT_TYPES[p.typeKey].shootInterval || 300) / 10;
+                        
+                        if (p.anim.timer % Math.max(2, Math.floor(interval)) === 0) {
+                            projectiles.push(new Projectile(p.x + p.width / 2, p.y + p.height / 2 - 10, p.row, 'ZAP', 1, null));
+                        }
+
+                         if (p.anim.timer > 120) { // Zap for 2 seconds
+                            p.anim.state = 'EXPLODE';
+                            explosions.push(new Explosion(p.x + p.width/2, p.y + p.height/2, TILE_SIZE * 1.5, 0, 'zap'));
+                            if (!isTileBurnt(p.row, p.col)) {
+                                burntTiles.push({ row: p.row, col: p.col, timer: 15 * FPS });
+                            }
+                            p.remove(true);
+                        }
+                    }
+                    if (p.anim.state !== 'EXPLODE' && p.anim.state !== 'DONE' && !p.removed) allAnimsDone = false;
+                 });
+                 if (allAnimsDone && zapperPlants.length === 0) allAnimsDone = true; // Skip
+                 if (allAnimsDone) {
+                    // --- MODIFIED: Transition to Heavy Zappers ---
+                    waveClearPhase = 'HEAVY_ZAPPERS_FIRE';
+                    heavyZapperPlants.forEach((p, index) => {
+                         p.anim.state = 'START_FIRE';
+                         p.anim.timer = -index * 5; // Stagger
+                         p.ammo = 3; // Give them 3 ammo for the show
+                    });
+                    // --- End MODIFIED ---
+                 }
+            }
+            // --- NEW: Crisis Carrot Animation Phase ---
+            else if (waveClearPhase === 'HEAVY_ZAPPERS_FIRE') {
+                allAnimsDone = true;
+                heavyZapperPlants.forEach(p => {
+                    p.anim.timer++;
+                    if (p.anim.state === 'START_FIRE' && p.anim.timer >= 0) {
+                        p.anim.state = 'FIRING';
+                        p.anim.timer = 0;
+                    }
+                    if (p.anim.state === 'FIRING') {
+                        allAnimsDone = false;
+                        
+                        if (p.ammo > 0 && p.anim.timer % 30 === 0) { // Fire one every 0.5s
+                            p.ammo--;
+                            // Create a dummy target off-screen
+                            const dummyTarget = {
+                                x: CANVAS_WIDTH + 100,
+                                y: p.y,
+                                width: TILE_SIZE, height: TILE_SIZE,
+                                isDummyTarget: true,
+                                health: 1 // Give it 1 health so projectile tracks it
+                            };
+                            projectiles.push(new Projectile(p.x + p.width / 2, p.y + p.height / 2, p.row, 'HEAVY_ZAP_ATTACK', 1, dummyTarget));
+                        }
+                        
+                        if (p.ammo === 0 && p.anim.timer > 100) { // After firing all 3
+                            p.anim.state = 'EXPLODE';
+                            // Use self-destruct animation from draw logic
+                            p.anim.state = 'SELF_DESTRUCT';
+                            p.anim.timer = 0; 
+                        }
+                    }
+                    
+                    // This state is handled by the draw() function
+                    if (p.anim.state === 'SELF_DESTRUCT') {
+                        allAnimsDone = false; // Wait for it to finish
+                        if (p.removed) p.anim.state = 'DONE';
+                    }
+                    
+                    if (p.anim.state !== 'DONE' && !p.removed) allAnimsDone = false;
+                });
+                if (allAnimsDone && heavyZapperPlants.length === 0) allAnimsDone = true; // Skip
+                if (allAnimsDone) {
+                    waveClearPhase = 'SPIKES_TRANSFORM';
+                    spikePlants.forEach((p, index) => {
+                         p.anim.state = 'START_TRANSFORM';
+                         p.anim.timer = -index * 5; // Stagger
+                    });
+                }
+            }
+            // --- END NEW ---
+            else if (waveClearPhase === 'SPIKES_TRANSFORM') {
+                allAnimsDone = true;
+                spikePlants.forEach(p => {
+                    p.anim.timer++;
+                    if (p.anim.state === 'START_TRANSFORM' && p.anim.timer >= 0) {
+                        p.anim.state = 'TRANSFORMING';
+                        p.anim.timer = 0;
+                    }
+                    if (p.anim.state === 'TRANSFORMING') {
+                        allAnimsDone = false;
+                        // Turn into a mower
+                        p.image = images.enemy_classic;
+                        
+                        if (p.anim.timer > 45) { // Wait ~0.75s
+                            p.anim.state = 'EXPLODE';
+                            explosions.push(new Explosion(p.x + p.width/2, p.y + p.height/2, TILE_SIZE * 1.5, 0, 'fire'));
+                            p.remove(true);
+                        }
+                    }
+                    if (p.anim.state !== 'EXPLODE' && p.anim.state !== 'DONE' && !p.removed) allAnimsDone = false;
+                });
+                if (allAnimsDone && spikePlants.length === 0) allAnimsDone = true; // Skip
+                if (allAnimsDone) {
+                    waveClearPhase = 'PRODUCERS_GLOW';
+                    producerPlants.forEach((p, index) => {
+                         p.anim.state = 'START_GLOW';
+                         p.anim.timer = -index * 5; // Stagger
+                         p.anim.scale = 1.0;
+                         p.anim.glow = false;
+                    });
+                }
+            }
+            else if (waveClearPhase === 'PRODUCERS_GLOW') {
+                allAnimsDone = true;
+                producerPlants.forEach(p => {
+                    p.anim.timer++;
+                    if (p.anim.state === 'START_GLOW' && p.anim.timer >= 0) {
+                        p.anim.state = 'GLOWING';
+                        p.anim.timer = 0;
+                        p.anim.glow = true; // Use glow from draw function
+                    }
+                    if (p.anim.state === 'GLOWING') {
+                        allAnimsDone = false;
+                        if (p.anim.timer > 30) {
+                            p.anim.state = 'EXPAND1';
+                            p.anim.timer = 0;
+                        }
+                    }
+                    else if (p.anim.state === 'EXPAND1') {
+                        allAnimsDone = false;
+                        p.anim.scale += 0.05; // Expand
+                        if (p.anim.scale >= 1.5) {
+                            p.anim.state = 'EXPAND2';
+                            p.anim.timer = 0;
+                            p.anim.scale = 1.0; // Reset for next expand
+                        }
+                    }
+                    else if (p.anim.state === 'EXPAND2') {
+                        allAnimsDone = false;
+                        p.anim.scale += 0.1; // Expand faster
+                        if (p.anim.scale >= 2.0) {
+                            p.anim.state = 'EXPLODE';
+                            p.anim.glow = false;
+                            explosions.push(new Explosion(p.x + p.width/2, p.y + p.height/2, TILE_SIZE * 2, 0, 'orange'));
+                            p.remove(true);
+                        }
+                    }
+                    
+                    if (p.anim.state !== 'EXPLODE' && p.anim.state !== 'DONE' && !p.removed) allAnimsDone = false;
+                });
+                if (allAnimsDone && producerPlants.length === 0) allAnimsDone = true; // Skip
+                if (allAnimsDone) {
+                    waveClearPhase = 'FINISH';
+                    waveClearTimer = 0;
+                }
+            }
+            else if (waveClearPhase === 'FINISH') {
+                waveClearTimer++;
+                if (waveClearTimer > 60) { // Wait 1 second
+                    isWaveClearAnimation = false;
+                    waveClearPhase = 'IDLE';
+                    
+                    if (currentWave >= WAVE_DATA.length) {
+                        gameOver("YOU WIN!");
+                    } else {
+                        waveTimer = 4 * FPS; // Start timer for next wave
+                    }
+                }
+            }
+            
+            // Update projectiles, beams, and explosions during animation
+            projectiles.forEach(p => p.update()); 
+            beams.forEach(b => b.update());
+            explosions.forEach(e => e.update());
+            cleanupArrays(); // Clean up projectiles/explosions/beams
+        }
+
+
+        function startNextWave() {
+            if (currentWave >= WAVE_DATA.length) return;
+            waveInProgress = true; enemiesToSpawn = []; currentWave++;
+            const wave = WAVE_DATA[currentWave - 1];
+			isFoggy = wave.isFoggy || false;
+            for (const typeKey in wave.mowerTypes) { for (let i = 0; i < wave.mowerTypes[typeKey]; i++) enemiesToSpawn.push(typeKey); }
+            enemiesToSpawn.sort(() => Math.random() - 0.5);
+            
+            // NEW: Ensure boss always spawns last
+            const bossIndex = enemiesToSpawn.indexOf('DESTROYER_TANK');
+            if (bossIndex > -1) {
+                const boss = enemiesToSpawn.splice(bossIndex, 1)[0];
+                enemiesToSpawn.push(boss);
+            }
+
+            waveDisplay.textContent = `Wave: ${currentWave}/${WAVE_DATA.length}`;
+        }
+
+        function spawnEnemyFromQueue() {
+            if (enemiesToSpawn.length === 0) return;
+            const newEnemy = new Enemy(Math.floor(Math.random() * ROWS), enemiesToSpawn.shift());
+            
+            // Apply weaken hack if active
+            if (hacks.weakenMowers) {
+                newEnemy.maxHealth = newEnemy.maxHealth * 0.5;
+                newEnemy.health = newEnemy.health * 0.5;
+            }
+            
+            enemies.push(newEnemy);
+        }
+
+        function updateGameObjects() {
+            const enemiesByRow = {}, plantsByRow = {};
+            for (let r = 0; r < ROWS; r++) { enemiesByRow[r] = []; plantsByRow[r] = []; }
+            enemies.forEach(e => {
+                const currentVisualRow = Math.max(0, Math.min(ROWS - 1, Math.round(e.y / TILE_SIZE)));
+                if (!enemiesByRow[currentVisualRow]) enemiesByRow[currentVisualRow] = [];
+                enemiesByRow[currentVisualRow].push(e);
+            });
+            plants.forEach(p => {
+                let enemiesForThisPlant = enemiesByRow[p.row] || [];
+                // NEW: Filter out stealthed enemies for shooters
+                if (p.behavior === 'SHOOTER' || p.behavior === 'BEAM') { // Added BEAM
+                    enemiesForThisPlant = enemiesForThisPlant.filter(e => !(e.typeKey === 'STEALTH' && e.isStealthed));
+                }
+                p.update(enemiesForThisPlant); 
+            });
+            plants.forEach(p => { if (!p.removed) plantsByRow[p.row].push(p); });
+            projectiles.forEach(p => p.update()); 
+            beams.forEach(b => b.update()); // NEW: Update beams
+            plants.forEach(p => {
+                // p.update(enemiesByRow[p.row] || []); // Already called above
+                if (isTileLava(p.row, p.col)) {
+                    p.takeDamage(0.3); // Damage per frame from lava
+                }
+            });
+            enemies.forEach(e => e.update(plantsByRow[e.row] || [], enemies)); // NEW: Pass allEnemies
+            explosions.forEach(e => e.update());
+			enemies.forEach(enemy => {
+                if (enemy.health > 0 && enemy.health <= 150) {
+                    // Check base health too, to avoid bosses
+                    const baseHealth = ENEMY_TYPES[enemy.typeKey].health;
+                    if (baseHealth <= 150) { 
+                        const c = Math.floor((enemy.x + enemy.width / 2) / TILE_SIZE);
+                        const r = Math.max(0, Math.min(ROWS - 1, Math.round(enemy.y / TILE_SIZE)));
+                        if (isTileWater(r, c)) {
+                            enemy.health = 0; // Sinks
+                            // Add a splash effect (using 'zap' for a blue-ish color)
+                            explosions.push(new Explosion(enemy.x + enemy.width/2, enemy.y + enemy.height/2, TILE_SIZE * 0.5, 0, 'zap'));
+                        }
+                    }
+                }
+            });
+            burntTiles.forEach(tile => tile.timer--);
+            lavaTiles.forEach(tile => tile.timer--);
+			waterPatches.forEach(patch => patch.timer--);
+            floatingIcons.forEach(i => i.update());
+        }
+
+        function handleCollisions() {
+            projectiles.forEach(p => {
+                if(p.hasHit) return;
+                
+                if(p.target) {
+                    // This is handled in projectile.update()
+                    return;
+                }
+
+                // --- MODIFIED: Added damageType logic ---
+                const enemiesInRow = enemies.filter(e => !e.isHypnotized && Math.max(0, Math.min(ROWS - 1, Math.round(e.y / TILE_SIZE))) === p.row);
+                for (const enemy of enemiesInRow) {
+                    // NEW: Check for stealth
+                    if (enemy.typeKey === 'STEALTH' && enemy.isStealthed) {
+                        continue; // Skip this enemy
+                    }
+                    
+                    // NEW: Check for shield
+                    if (enemy.typeKey === 'SHIELD_MOWER' && p.typeKey !== 'PEPPER' && p.typeKey !== 'BULB' && p.typeKey !== 'CARB' && p.typeKey !== 'HEAVY_ZAP_ATTACK') { // Explosives and heavy zaps go through
+                         if (rectsOverlap(p, enemy)) {
+                            p.hasHit = true; // Projectile is destroyed
+                            break; // Stop checking this projectile
+                         }
+                    }
+                
+                    if (rectsOverlap(p, enemy)) { 
+                        p.hasHit = true; 
+                        const projectileData = PROJECTILE_TYPES[p.typeKey];
+                        
+                        let damageType = 'normal';
+                        if (p.typeKey === 'ZAP') damageType = 'zap';
+                        // Note: HEAVY_ZAP_ATTACK is homing, so it's handled in projectile.update()
+                        
+                        if (projectileData.isExplosive) {
+                            explosions.push(new Explosion(p.x, p.y + p.height / 2, projectileData.explosionRadius, projectileData.damage, projectileData.explosionColor || 'orange', damageType));
+                        } else {
+                            enemy.takeDamage(p.damage, damageType); 
+                            if (projectileData.pushback) {
+                                enemy.x += projectileData.pushback;
+                                if (enemy.x > CANVAS_WIDTH - enemy.width) {
+                                    enemy.x = CANVAS_WIDTH - enemy.width;
+                                }
+                            }
+                        }
+                        break; 
+                    }
+                }
+                // --- END MODIFIED ---
+            });
+        }
+
+        function cleanupArrays() {
+            plants = plants.filter(p => !p.removed && p.health > 0); 
+            enemies = enemies.filter(e => e.health > 0);
+            projectiles = projectiles.filter(p => !p.hasHit && !p.isOffscreen);
+            explosions = explosions.filter(e => e.isAlive);
+            beams = beams.filter(b => b.isAlive); // NEW: Cleanup beams
+			waterPatches = waterPatches.filter(patch => patch.timer > 0);
+            burntTiles = burntTiles.filter(tile => tile.timer > 0);
+            const expiredLava = lavaTiles.filter(tile => tile.timer <= 0);
+            lavaTiles = lavaTiles.filter(tile => tile.timer > 0);
+            expiredLava.forEach(tile => {
+                // Remove any existing burnt tile at this spot
+                burntTiles = burntTiles.filter(t => t.row !== tile.row || t.col !== tile.col);
+                // Add the new burnt tile
+                burntTiles.push({ row: tile.row, col: tile.col, timer: tile.burnTimer });
+            });
+            floatingIcons = floatingIcons.filter(i => i.isAlive);
+        }
+        
+        // === DRAWING & UI ===
+        function drawLawn() {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const lava = lavaTiles.find(t => t.row === r && t.col === c);
+                    if (lava) {
+                        drawImageOrFallback(ctx, images.lava_tile, c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    } else if (isTileBurnt(r, c)) {
+                        drawImageOrFallback(ctx, images.burnt_tile, c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    } else {
+                        drawImageOrFallback(ctx, images.tile, c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    }
+                    
+                    // NEW: Draw water patch (if not lava)
+                    if (!lava && isTileWater(r, c)) {
+                        ctx.save();
+                        const patch = waterPatches.find(p => p.row === r && p.col === c);
+                        // Fade out in last 2 seconds
+                        if (patch && patch.timer < 2 * FPS) { 
+                            ctx.globalAlpha = Math.max(0, patch.timer / (2 * FPS));
+                        }
+                        drawImageOrFallback(ctx, images.tile_water, c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                        ctx.restore();
+                    }
+    
+                    if (isTileDesaturated(r, c)) {
+                        ctx.fillStyle = 'rgba(50, 50, 50, 0.6)';
+                        ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    }
+                }
+            }
+        }
+		function drawFog() { // NEW
+            ctx.save();
+            ctx.globalAlpha = 0.6;
+            const fogStartCol = 0;
+			// const fogStartCol = COLS - 5;
+            const fogX = fogStartCol * TILE_SIZE;
+            const fogWidth = 15 * TILE_SIZE;
+            drawImageOrFallback(ctx, images.env_fog, fogX, 0, fogWidth, CANVAS_HEIGHT);
+            ctx.restore();
+        }
+        function drawImageOrFallback(ctx, img, x, y, w, h) {
+            if (img && img.complete && img.naturalHeight > 0) ctx.drawImage(img, x, y, w, h);
+            else { 
+                // Fallback for missing images
+                ctx.fillStyle = 'rgba(128, 0, 128, 0.7)'; // Purple square
+                ctx.fillRect(x + w * 0.1, y + h * 0.1, w * 0.8, h * 0.8);
+                ctx.strokeStyle = 'magenta';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x + w * 0.1, y + h * 0.1, w * 0.8, h * 0.8);
+                ctx.fillStyle = 'white';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('?', x + w / 2, y + h / 2);
+                ctx.textAlign = 'left';
+            }
+        }
+        function drawHealthBar(ctx, objX, objY, objW, objH, health, maxH, fillColor = 'rgba(0,255,0,0.8)') {
+            if (health >= maxH && fillColor !== '#FFD700') return;
+            health = Math.max(0, health);
+            const bH = 5, bW = objW * 0.8, bX = objX + (objW - bW) / 2, bY = objY + objH + 3;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(bX - 1, bY - 1, bW + 2, bH + 2);
+            ctx.fillStyle = 'rgba(255,0,0,0.7)'; ctx.fillRect(bX, bY, bW, bH);
+            ctx.fillStyle = fillColor; ctx.fillRect(bX, bY, bW * (health / maxH), bH);
+        }
+        
+        // NEW: Boss Health Bar
+        function drawBossHealthBar() {
+            if (!currentBoss || currentBoss.health <= 0) {
+                currentBoss = null;
+                return;
+            }
+            const barWidth = CANVAS_WIDTH * 0.8;
+            const barHeight = 30;
+            const barX = (CANVAS_WIDTH - barWidth) / 2;
+            const barY = 20;
+            const healthPercent = currentBoss.health / currentBoss.maxHealth;
+
+            // Bar background
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.fillRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4);
+            ctx.fillStyle = '#550000';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+
+            // Bar foreground (gradient)
+            const gradient = ctx.createLinearGradient(barX, barY, barX, barY + barHeight);
+            gradient.addColorStop(0, '#ff4d4d');
+            gradient.addColorStop(0.5, '#ff0000');
+            gradient.addColorStop(1, '#cc0000');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(barX, barY, barWidth * healthPercent, barHeight);
+            
+            // Border
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(barX, barY, barWidth, barHeight);
+
+            // Text
+            ctx.font = 'bold 20px Arial';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'black';
+            ctx.shadowBlur = 5;
+            ctx.fillText(`DESTROYER TANK (${Math.ceil(currentBoss.health)})`, CANVAS_WIDTH / 2, barY + barHeight / 2);
+            ctx.shadowBlur = 0;
+            ctx.textAlign = 'left'; // Reset
+            ctx.textBaseline = 'alphabetic'; // Reset
+        }
+
+        function drawOverlay() {
+            let text = '';
+            if (!isGameOverAnimation && !waveInProgress && currentWave < WAVE_DATA.length && !isWaveClearAnimation) text = `Wave ${currentWave + 1} starting in ${Math.ceil(waveTimer / FPS)}`;
+            else if (!isGameOverAnimation && !waveInProgress && currentWave >= WAVE_DATA.length && enemies.length > 0) text = `FINAL WAVE`;
+            if (isPaused) text = "PAUSED";
+            gameOverlay.textContent = text;
+            gameOverlay.style.opacity = text ? 1 : 0;
+        }
+
+        // === EVENT HANDLERS & HELPERS ===
+        function handleCanvasClick(e) {
+            if (isPaused || isGameOverAnimation || isWaveClearAnimation) return; // NEW: Block clicks during anim
+            hideContextMenu();
+            const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX; const mouseY = (e.clientY - rect.top) * scaleY;
+            const col = Math.floor(mouseX / TILE_SIZE); const row = Math.floor(mouseY / TILE_SIZE);
+            if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
+            if (isUprooting) {
+                const plant = gameGrid[row][col];
+                if (plant) plant.remove();
+                toggleUproot();
+            } else if (selectedPlantType) {
+                const plantData = PLANT_TYPES[selectedPlantType];
+                if (currency >= plantData.cost && !gameGrid[row][col] && !isTileBurnt(row, col) && !isTileWater(row, col)) { // ADDED water check
+                    currency -= plantData.cost; updateTopBar();
+                    const newPlant = new Plant(row, col, selectedPlantType);
+                    
+                    // Apply instant cooldown hack if active
+                    if (hacks.instantCooldowns) {
+                        applyBoostToPlant(newPlant);
+                    }
+                    
+                    plants.push(newPlant); gameGrid[row][col] = newPlant;
+                }
+            }
+        }
+        function handleCanvasRightClick(e) {
+            e.preventDefault();
+            if (isPaused || isGameOverAnimation || isWaveClearAnimation) return; // NEW: Block clicks during anim
+            const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
+            const mouseX = (e.clientX - rect.left) * scaleX; const mouseY = (e.clientY - rect.top) * scaleY;
+            const col = Math.floor(mouseX / TILE_SIZE); const row = Math.floor(mouseY / TILE_SIZE);
+            if (row < 0 || row >= ROWS || col < 0 || col >= COLS) { hideContextMenu(); return; }
+            const plant = gameGrid[row][col];
+            if (plant) showContextMenu(plant, e.clientX, e.clientY); else hideContextMenu();
+        }
+        function showContextMenu(plant, x, y) {
+            activeContextMenuPlant = plant;
+            contextMenu.innerHTML = '';
+            const uprootBtn = document.createElement('button'); uprootBtn.textContent = 'Uproot';
+            uprootBtn.onclick = () => { plant.remove(); hideContextMenu(); };
+            contextMenu.appendChild(uprootBtn);
+            const typeData = PLANT_TYPES[plant.typeKey];
+            if (typeData.shotLimit || typeData.productionLimit) {
+                const seedBtn = document.createElement('button'); seedBtn.textContent = `Plant Seed (${seeds})`;
+                seedBtn.disabled = !plant.isSlowed || seeds <= 0;
+                seedBtn.onclick = () => { if (seeds > 0 && plant.isSlowed) { seeds--; plant.isSlowed = false; plant.usageCount = 0; updateTopBar(); } hideContextMenu(); };
+                contextMenu.appendChild(seedBtn);
+            }
+            // NEW: Don't allow boost on Crisis Carrot (ammo based) or weak Myrtle
+            const canBeBoosted = boosts > 0 && !plant.isSlowed && !plant.isHypnotizer && plant.typeKey !== 'CRISIS_CARROT' && !plant.isWeak;
+            const boostBtn = document.createElement('button'); boostBtn.textContent = `Boost (${boosts})`;
+            boostBtn.disabled = !canBeBoosted;
+            boostBtn.onclick = () => { if (canBeBoosted) { boosts--; applyBoostToPlant(plant); updateTopBar(); } hideContextMenu(); };
+            contextMenu.appendChild(boostBtn);
+            contextMenu.style.left = `${x}px`; contextMenu.style.top = `${y}px`; contextMenu.style.display = 'flex';
+        }
+        function hideContextMenu() {
+            if (contextMenu.style.display !== 'none') { contextMenu.style.display = 'none'; activeContextMenuPlant = null; }
+        }
+        function applyBoostToPlant(plant) {
+            plant.isBoosted = true; 
+            // If hack is active, set timer to a huge number (effectively permanent)
+            plant.boostTimer = hacks.instantCooldowns ? 9999 * FPS : 20 * FPS;
+            plant.health = plant.maxHealth;
+            if (plant.behavior === 'SHOOTER' || plant.behavior === 'PRODUCER' || plant.behavior === 'ZAPPER' || plant.behavior === 'BEAM') { // Added BEAM
+                plant.usageCount = 0; plant.isSlowed = false;
+            }
+            if (plant.behavior === 'WALL' && !plant.isHypnotizer) { // NEW: Don't boost hypnotizer health
+                plant.health = plant.originalMaxHealth * 2; plant.maxHealth = plant.originalMaxHealth * 2;
+            }
+        }
+        function selectPlant(typeKey) {
+            isUprooting = false; uprootButton.classList.remove('selected');
+            selectedPlantType = typeKey;
+            document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`.plant-card[data-type="${typeKey}"]`).classList.add('selected');
+        }
+        function toggleUproot() {
+            isUprooting = !isUprooting;
+            if (isUprooting) {
+                selectedPlantType = null;
+                document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
+                uprootButton.classList.add('selected');
+            } else { uprootButton.classList.remove('selected'); }
+        }
+        function isTileWater(row, col) { return waterPatches.some(patch => patch.row === row && patch.col === col); }
+		function isTileBurnt(row, col) { return burntTiles.some(tile => tile.row === row && tile.col === col); }
+        function isTileDesaturated(row, col) { return desaturatedTiles.some(tile => tile.row === row && tile.col === col); }
+        function isTileLava(row, col) { return lavaTiles.some(tile => tile.row === row && tile.col === col); }
+		function toggleTwoxSpeed() {
+            if (isPaused) return; // Don't change speed while paused
+            if (gameSpeed === 1) {
+                gameSpeed = 2;
+                twoxSpeedButton.textContent = "2x SPEED (ON)";
+                twoxSpeedButton.classList.add('selected');
+            } else {
+                gameSpeed = 1;
+                twoxSpeedButton.textContent = "2x SPEED";
+                twoxSpeedButton.classList.remove('selected');
+            }
+        }
+
+        // --- Shop Functions ---
+        function openShop() {
+            // Reset shop to default view
+            shopItems.style.display = 'grid';
+            shopTransactionScreen.style.display = 'none';
+            shopCompleteScreen.style.display = 'none';
+            shopProgressBar.style.width = '0%';
+            shopOverlay.style.display = 'flex';
+            
+            // Pause the game when shop is open
+            if (!isPaused) togglePause();
+        }
+
+        function closeShop() {
+            shopOverlay.style.display = 'none';
+            // Unpause the game ONLY if it was paused by the shop
+            // We check if the pause button text is "PAUSE", meaning the user didn't manually pause
+            if (isPaused && pauseButton.textContent === "PAUSE") {
+                togglePause();
+            }
+        }
+
+        function startFakeTransaction(cost, perk) {
+            // Hide items, show transaction screen
+            shopItems.style.display = 'none';
+            shopTransactionScreen.style.display = 'flex';
+            
+            let progress = 0;
+            shopProgressBar.style.width = '0%';
+            
+            const interval = setInterval(() => {
+                progress += 1;
+                shopProgressBar.style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    // Show complete screen
+                    shopTransactionScreen.style.display = 'none';
+                    shopCompleteScreen.style.display = 'flex';
+                    shopCompleteMessage.textContent = `Thank you for your purchase! $${cost} has been successfully charged to your account.`;
+                    
+                    // Apply the actual perk
+                    applyShopPerk(perk);
+                }
+            }, 30); // 30ms * 100 = 3000ms = 3 seconds
+        }
+
+        function applyShopPerk(perk) {
+            switch(perk) {
+                case 'boosts':
+                    boosts += 10;
+                    break;
+                case 'seeds':
+                    seeds += 25;
+                    break;
+                case 'money':
+                    currency += 500;
+                    break;
+                case 'godmode':
+                    // ... (existing godmode code) ...
+                    if (!PLANT_TYPES.GOD_GOURD) {
+                        PLANT_TYPES.GOD_GOURD = { 
+                            name: 'God-Mode Gourd', 
+                            cost: 1, // Cheap to place
+                            health: 100000, 
+                            imageKey: 'plant_god_potato', // Used to re-use potato image
+                            behavior: 'WALL', 
+                            isTargetable: true 
+                        };
+                        
+                        // Add it to the UI menu
+                        const plant = PLANT_TYPES.GOD_GOURD;
+                        const typeKey = 'GOD_GOURD';
+                        const card = document.createElement('div'); 
+                        card.className = 'plant-card'; 
+                        card.dataset.type = typeKey;
+                        const imgSrc = IMAGE_SOURCES[plant.imageKey] || '';
+                        
+                        card.innerHTML = `<img src="${imgSrc}" onerror="this.style.background='purple'; this.style.borderRadius='5px'; this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';"><div class="info"><span class="name">${plant.name}</span><span class="cost">$${plant.cost}</span></div>`;
+                        card.addEventListener('click', () => selectPlant(typeKey));
+                        
+                        // Style it to look "premium"
+                        card.style.border = '3px solid #ffd700';
+                        card.style.boxShadow = '0 0 15px #ffd700';
+                        
+                        plantMenu.appendChild(card);
+                    }
+                    break;
+                // --- ADD THESE NEW CASES ---
+                case 'weaken':
+                    hacks.weakenMowers = true;
+                    // Also weaken existing mowers
+                    enemies.forEach(e => {
+                         // Don't "heal" them, just set max and current health lower
+                         e.maxHealth = e.maxHealth * 0.5;
+                         e.health = e.health * 0.5;
+                    });
+                    break;
+                case 'cooldowns':
+                    hacks.instantCooldowns = true;
+                    // Boost all existing plants
+                    plants.forEach(p => applyBoostToPlant(p));
+                    break;
+                // --- END NEW CASES ---
+            }
+            updateTopBar(); // Update UI to show new values
+        }
+        function togglePause() { 
+            if(isWaveClearAnimation || isGameOverAnimation) return; // Don't pause during anims
+            isPaused = !isPaused; 
+            pauseButton.textContent = isPaused ? "RESUME" : "PAUSE"; 
+        }
+        function updateTopBar() {
+            currencyDisplay.textContent = currency;
+            seedsDisplay.textContent = seeds;
+            boostsDisplay.textContent = boosts;
+        }
+        
+        // NEW: Updated Game Over logic
+        function gameOver(message) {
+            if (isGameOverAnimation && message !== "YOU WIN!") return; // Don't let "mowers reached" override win anim
+            
+            if (message === "YOU WIN!") {
+                gameRunning = false; // Stop updates
+                isWaveClearAnimation = false; // Stop anim loop
+                isGameOverAnimation = false; // Stop lose loop
+
+                let finalMessage = message;
+                // Score was calculated and stored in finalScore when animation started
+                finalMessage += `\nFinal Score: ${finalScore}`;
+                gameOverlay.textContent = finalMessage; 
+                gameOverlay.style.opacity = 1;
+            } else { // This is the "lose" logic
+                if(isGameOverAnimation) return; // Prevent re-triggering
+                gameRunning = true; // Keep loop running for animation
+                isWaveClearAnimation = false; // Stop any wave clear anim
+                currentBoss = null; // Hide boss bar on loss
+                isGameOverAnimation = true;
+                gameOverState = 'PLANTS_FADING';
+                plantsToFade = plants.filter(p => !p.isDefeated).sort(() => Math.random() - 0.5);
+                gameOverAnimationTimer = 0;
+            }
+        }
+        
+        function runGameOverAnimation() {
+            switch(gameOverState) {
+                case 'PLANTS_FADING':
+                    gameOverAnimationTimer++;
+                    if(gameOverAnimationTimer % 4 === 0 && plantsToFade.length > 0) {
+                        const plant = plantsToFade.pop();
+                        if(plant) plant.isDefeated = true;
+                    }
+                    if(plantsToFade.length === 0) {
+                        gameOverState = 'MOWERS_LEAVING';
+                        // --- BUG FIX: This block ensures mowers turn around ---
+                        enemies.forEach(e => { 
+                            e.isLeaving = true;
+                            e.isAttacking = false;
+                            e.attackTimer = 0;
+                            e.rowChangeTimer = 0; // Stop row changes
+                            e.targetY = e.y; // Stay in current row
+                            e.direction = 1; // Turn sprite/logic to the right
+                            e.speed = Math.abs(ENEMY_TYPES[e.typeKey].speed || 0.3); // Ensure positive speed
+                            e.isStealthed = false;
+                            e.isHypnotized = false; // Break hypnosis
+                        });
+                        // --- END FIX ---
+                    }
+                    break;
+                case 'MOWERS_LEAVING':
+					// Update movement once per frame while in leaving state
+					enemies.forEach(e => e.update());
+                    
+					if (enemies.every(e => e.x > CANVAS_WIDTH + TILE_SIZE)) { // Check they are fully off-screen
+						gameOverState = 'FINISHED';
+						gameRunning = false;
+						gameOverlay.textContent = 'GAME OVER';
+						gameOverlay.style.opacity = 1;
+					}
+					break;
+            }
+        }
+        function rectsOverlap(r1, r2) { return r1.x < r2.x + (r2.width || r2.w || 0) && r1.x + (r1.width || r1.w || 0) > r2.x && r1.y < r2.y + (r2.height || r2.h || 0) && r1.y + (r1.height || r1.h || 0) > r2.y; }
+        function preloadImages(sources) {
+            const promises = []; const loadedImages = {};
+            for (const key in sources) {
+                const src = sources[key]; const img = new Image(); loadedImages[key] = img;
+                const promise = new Promise((resolve) => { img.onload = resolve; img.onerror = () => { console.warn(`Failed to load: ${src}`); resolve(); }; });
+                img.src = src; promises.push(promise);
+            }
+            return Promise.all(promises).then(() => loadedImages);
+        }
+    </script>
+	<div id="shop-modal-overlay" class="shop-overlay">
+        <div id="shop-modal-content">
+            <button id="shop-close-button">&times;</button>
+            <h2 style="text-align: center; color: #ffd700;">PREMIUM STORE</h2>
+            <p style="text-align: center; font-size: 1.1em;">Get the unfair advantage you deserve!</p>
+            
+            <div id="shop-items">
+                <div class="shop-item" data-cost="4.99" data-perk="boosts">
+                    <h3>Starter Pack</h3>
+                    <p>+10 Boosts</p>
+                    <button class="shop-buy-button">$4.99</button>
+                </div>
+                <div class="shop-item" data-cost="9.99" data-perk="seeds">
+                    <h3>Gardener's Bundle</h3>
+                    <p>+25 Seeds</p>
+                    <button class="shop-buy-button">$9.99</button>
+                </div>
+                <div class="shop-item" data-cost="19.99" data-perk="money">
+                    <h3>Cash Infusion</h3>
+                    <p>+$500 In-Game Cash</p>
+                    <button class="shop-buy-button">$19.99</button>
+                </div>
+                <div class="shop-item" data-cost="49.99" data-perk="godmode">
+                    <h3>"The Dev" Plant</h3>
+                    <p>Unlocks the 'God-Mode Gourd'. (A 100,000 HP potato)</p>
+                    <button class="shop-buy-button">$49.99</button>
+                </div>
+				<div class="shop-item" data-cost="99.99" data-perk="weaken">
+                    <h3 style="color: #ff8c8c;">Hack: Weaken Mowers</h3>
+                    <p>All mowers have 50% health for the rest of the game.</p>
+                    <button class="shop-buy-button">$99.99</button>
+                </div>
+                <div class="shop-item" data-cost="149.99" data-perk="cooldowns">
+                    <h3 style="color: #ff8c8c;">Hack: Instant Cooldowns</h3>
+                    <p>All plants attack and produce 5x faster. (Toggles Boost)</p>
+                    <button class="shop-buy-button">$149.99</button>
+                </div>
+            </div>
+
+            <div id="shop-transaction-screen">
+                <h3 style="color: #ffb5b5;">Processing Payment...</h3>
+                <p>Transacting Your Card Funds. Do Not Close This Window.</p>
+                <div id="shop-progress-bar-container">
+                    <div id="shop-progress-bar"></div>
+                </div>
+            </div>
+            
+            <div id="shop-complete-screen">
+                <h3 style="color: #b5ffb5;">Transaction Complete!</h3>
+                <p id="shop-complete-message"></p>
+                <button id="shop-complete-ok-button" class="ui-button">Awesome!</button>
+            </div>
+        </div>
+    </div>
+    </body>
+</body>
+</html>
