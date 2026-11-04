@@ -1,5 +1,6 @@
 // Alligator Games – virtual file server for games at /__g/<gameId>/<path>
 // App shell: index, sw and the few CDN assets are cached so the store opens fully offline (games come from the offline library).
+importScripts('sw-plus.js');
 const SHELL = 'ag-shell-v2', CDN = ['cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 const PRE = ['./', 'index.html', 'catalog.txt', 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap'];
 self.addEventListener('install', e => {
