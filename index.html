@@ -538,7 +538,7 @@ ${ck('cm','Add comments','A readable note above every game and creator (name, id
 <div class="d mt-3">${EXO.scope=='all'?'On GitHub: open <b>catalog.txt</b>, pencil, select all, paste, Commit.':'On GitHub: open <b>catalog.txt</b>, pencil, paste at the bottom, Commit.'} Very large catalogs: use Download and the upload page instead.</div>
 <h2>Image size</h2><label class="l">Cover and screenshot size</label><select id="imgsz">${[[640,'Small (640 px, tiny data)'],[960,'Medium (960 px)'],[1280,'Large (1280 px, default)']].map(([v,t])=>`<option value="${v}" ${(+localStorage.agimg||1280)==v?'selected':''}>${t}</option>`).join('')}</select><div class="d">Applies to images you add from now on.</div>`},
 reedit:()=>`<h2 style="margin-top:0">Re-edit & import</h2><p class="d mb-3">Paste exported data to decompress it and edit it again.</p><textarea id="paste" rows="8" style="font-family:monospace"></textarea><div class="mt-3 flex gap-2"><button class="gb p" data-a="loadp">Load into editor</button></div>`,
-mine:()=>`<h2 style="margin-top:0">Your games</h2><button class="gb p mb-4" data-a="newg">New game</button>${G.map(g=>`<div class="rowg flex items-center gap-3 py-2 border-b border-[#3d444d]"><b class="flex-1 truncate">${h(g.title)}</b><span class="d">${up(g)?'upcoming':'released'}</span><span class="rb flex gap-3 items-center"><button class="gb" data-a="editg" data-id="${g.id}">Edit game</button><button class="gb" data-a="editg" data-both="1" data-id="${g.id}">Game + creator</button><button class="gb" data-a="sessadd" data-id="${g.id}">Add to session</button><button class="gb r" data-a="delg" data-id="${g.id}">Delete</button></span></div>`).join('')||'<p class="d">No games yet.</p>'}`};
+mine:()=>`<h2 style="margin-top:0">Your games</h2><button class="gb p mb-4" data-a="newg">New game</button>${G.map(g=>`<div class="rowg flex items-center gap-3 py-2 border-b border-[#3d444d]"><b class="flex-1 truncate">${h(g.title)}</b><span class="d">${up(g)?'upcoming':'released'}</span><span class="rb flex gap-3 items-center"><button class="gb" data-a="editg" data-id="${g.id}">Edit game</button><button class="gb" data-a="editg" data-both="1" data-id="${g.id}">Game + creator</button><button class="gb" data-a="dlg" data-id="${g.id}">Download files</button><button class="gb" data-a="sessadd" data-id="${g.id}">Add to session</button><button class="gb r" data-a="delg" data-id="${g.id}">Delete</button></span></div>`).join('')||'<p class="d">No games yet.</p>'}`};
 function lock(){app.innerHTML=`<div class="gh grid place-items-center"><div class="w-72"><div class="w-14 h-14 mx-auto mb-4">${LOGO}</div><h1 style="font-family:inherit;font-size:22px;text-align:center;margin-bottom:12px">Editor access</h1><input type="password" id="pw" placeholder="Edit password"><button class="gb p w-full mt-3" data-a="unlock">Unlock</button></div></div>`;setTimeout(()=>$('#pw')?.focus())}
 document.addEventListener('keydown',e=>{if(e.key=='Enter'&&e.target.id=='pw')A.unlock()});
 function ed(){if(!EDOK)return lock();document.title='Editor · Alligator Games';
@@ -841,6 +841,36 @@ Object.assign(A,{devset:(t,d)=>{F.dev=d.v;if(d.v=='auto')localStorage.removeItem
  uimode:(t,d)=>{if(d.v)localStorage.agui=d.v;else localStorage.removeItem('agui');render()}});
 matchMedia('(min-width:768px)').addEventListener('change',()=>{if(localStorage.agui=='nat'&&!$('#gf'))render()});
 
+/* ---------- Download games (editor) ---------- */
+const crcT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+const crc32=b=>{let c=-1;for(let i=0;i<b.length;i++)c=crcT[(c^b[i])&255]^(c>>>8);return(c^-1)>>>0};
+function mkzip(files){const te=new TextEncoder(),parts=[],cd=[];let o=0,cs=0;
+ for(const f of files){const n=te.encode(f.p),c=crc32(f.b),s=f.b.length;
+  const l=new DataView(new ArrayBuffer(30));l.setUint32(0,0x04034b50,true);l.setUint16(4,20,true);l.setUint16(6,0x0800,true);l.setUint32(14,c,true);l.setUint32(18,s,true);l.setUint32(22,s,true);l.setUint16(26,n.length,true);parts.push(l,n,f.b);
+  const h=new DataView(new ArrayBuffer(46));h.setUint32(0,0x02014b50,true);h.setUint16(4,20,true);h.setUint16(6,20,true);h.setUint16(8,0x0800,true);h.setUint32(16,c,true);h.setUint32(20,s,true);h.setUint32(24,s,true);h.setUint16(28,n.length,true);h.setUint32(42,o,true);cd.push(h,n);cs+=46+n.length;o+=30+n.length+s}
+ const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,o,true);
+ return new Blob([...parts,...cd,e],{type:'application/zip'})}
+function saveBlob(bl,name){const a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),60000)}
+let DLG={id:'',files:[],sel:new Set(),note:''};
+async function dlLoad(g){const s=g.src||{};
+ if(s.type=='bundle'){const p=await dget('packs',g.id)||await offGet(g.id);if(!p)throw Error('No saved files for this game');return{files:(await unpack(p)).files,note:''}}
+ if(s.type=='url'){const r=await fetch(s.url);if(!r.ok)throw Error('Could not fetch '+s.url);const b=new Uint8Array(await r.arrayBuffer()),p=decodeURIComponent(s.url.split('?')[0].split('/').pop())||'index.html';
+  return{files:[{p,t:mt(p),b}],note:'Hosted game: only the start file can be fetched. Other files live on the host.'}}
+ throw Error('Local-folder games already live on your computer')}
+function dlView(){const f=DLG.files,n=DLG.sel.size,tot=f.filter((_,i)=>DLG.sel.has(i)).reduce((a,x)=>a+x.b.byteLength,0);
+ rmodal(`<h3 class="text-xl font-extrabold mb-1">Download files</h3><p class="text-[var(--mu)] text-xs mb-3">${h(gm(DLG.id)?.title||'')} · ${f.length} files${DLG.note?'<br>'+h(DLG.note):''}</p>
+ <input type="text" id="dlq" placeholder="Filter, e.g. index.html or .js" class="w-full mb-2 px-3 py-2 rounded-lg bg-[var(--p2)] border border-[var(--ln)]">
+ <div class="flex gap-2 mb-2"><button class="btn !py-1 !px-3 text-xs" data-a="dlall" data-v="1">Select all</button><button class="btn !py-1 !px-3 text-xs" data-a="dlall" data-v="0">None</button></div>
+ <div id="dll" style="max-height:44vh;overflow:auto" class="rounded-lg border border-[var(--ln)]">${f.map((x,i)=>`<div class="dlr flex items-center gap-2 px-2 py-1.5 border-b border-[var(--ln)]" data-p="${h(x.p.toLowerCase())}"><input type="checkbox" data-dl="${i}" ${DLG.sel.has(i)?'checked':''}><span class="flex-1 truncate font-mono text-xs">${h(x.p)}</span><span class="text-[11px] text-[var(--mu)]">${fmt(x.b.byteLength)}</span><button class="btn !py-0.5 !px-2 text-xs" data-a="dlone" data-i="${i}">Get</button></div>`).join('')}</div>
+ <div class="flex flex-wrap gap-2 mt-3"><button class="btn ac" data-a="dlsel" ${n?'':'disabled'}>${n==1?'Download file':'Download '+n+' as ZIP'} (${fmt(tot)})</button><button class="btn" data-a="dlzipall">All as ZIP</button></div>`)}
+Object.assign(A,{
+ dlg:async(t,d)=>{const g=gm(d.id);if(!g)return;toast('Reading files…');try{const r=await dlLoad(g);DLG={id:g.id,files:r.files.sort((a,b)=>a.p.localeCompare(b.p)),sel:new Set(),note:r.note};const i=DLG.files.findIndex(x=>/(^|\/)index\.html?$/i.test(x.p));if(i>=0)DLG.sel.add(i);dlView()}catch(e){toast(e.message||'Failed')}},
+ dlone:(t,d)=>{const f=DLG.files[+d.i];if(f)saveBlob(new Blob([f.b],{type:f.t||mt(f.p)}),f.p.split('/').pop())},
+ dlall:(t,d)=>{DLG.sel=new Set(d.v=='1'?DLG.files.map((_,i)=>i):[]);dlView()},
+ dlsel:async()=>{const l=DLG.files.filter((_,i)=>DLG.sel.has(i));if(!l.length)return;if(l.length==1)return A.dlone(0,{i:DLG.files.indexOf(l[0])});saveBlob(mkzip(l),(DLG.id||'game')+'-files.zip')},
+ dlzipall:()=>saveBlob(mkzip(DLG.files),(DLG.id||'game')+'.zip')});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset&&t.dataset.dl!=null){const i=+t.dataset.dl;t.checked?DLG.sel.add(i):DLG.sel.delete(i);const b=$('[data-a=dlsel]');if(b){const n=DLG.sel.size;b.disabled=!n;b.textContent=(n==1?'Download file':'Download '+n+' as ZIP')}}});
+document.addEventListener('input',e=>{if(e.target.id=='dlq'){const q=e.target.value.toLowerCase();$$('.dlr').forEach(r=>r.style.display=r.dataset.p.includes(q)?'':'none')}});
 /* ---------- Router ---------- */
 async function render(){natBody();clearInterval(HT);clearInterval(FT);clearInterval(FPT);clearInterval(BT);if(WL){WL.release().catch(()=>{});WL=null}LF='';setFav(FURL);modal();document.title='Alligator Games';const r=location.hash.slice(1)||'/';if(r!='/editor')EDOK=false;
  if(r=='/editor')ed();else if(r.startsWith('/play/'))await play(r.slice(6));
