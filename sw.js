@@ -1,8 +1,8 @@
-// Alligator Games – virtual file server for games at /__g/<gameId>/<path>
+// Alligator Games – service worker (merged sw.js + sw-plus.js)
+// Virtual file server for games at /__g/<gameId>/<path>, plus PWA app shell.
 // App shell: index, sw and the few CDN assets are cached so the store opens fully offline (games come from the offline library).
-importScripts('sw-plus.js');
-const SHELL = 'ag-shell-v2', CDN = ['cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
-const PRE = ['./', 'index.html', 'catalog.txt', 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap'];
+const SHELL = 'ag-shell-v3', CDN = ['cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+const PRE = ['./', 'index.html', 'catalog.txt', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap'];
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(SHELL).then(c => Promise.all(PRE.map(u => fetch(u, { cache: 'reload', mode: u.startsWith('http') ? 'no-cors' : 'same-origin' }).then(r => (r.ok || r.type == 'opaque') && c.put(u, r)).catch(() => { })))));
@@ -26,9 +26,57 @@ async function extFetch(e) {
   try { if (!g && e.clientId) g = ((await clients.get(e.clientId))?.url || '').includes('/__g/') } catch { }
   try { const r = await fetch(q); if (g && (r.ok || r.type == 'opaque')) c.put(q, r.clone()); return r } catch { return Response.error() }
 }
+// ===== game file serving (formerly sw-plus.js): stronger lookups, retries, ghost stand-ins =====
+const IMG = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i, AUD = /\.(mp3|ogg|wav|m4a|aac|flac|opus)$/i;
+function wav() {
+  const b = new Uint8Array(46), d = new DataView(b.buffer), s = (o, t) => [...t].forEach((c, i) => b[o + i] = c.charCodeAt(0));
+  s(0, 'RIFF'); d.setUint32(4, 38, true); s(8, 'WAVEfmt '); d.setUint32(16, 16, true); d.setUint16(20, 1, true); d.setUint16(22, 1, true);
+  d.setUint32(24, 8000, true); d.setUint32(28, 8000, true); d.setUint16(32, 1, true); d.setUint16(34, 8, true); s(36, 'data'); d.setUint32(40, 2, true); b[44] = b[45] = 128;
+  return b;
+}
+// "ghost" stand-ins: a missing image/sound still loads (blank / silent) so a game's loader never hangs or gives up
+function ghost(p) {
+  const h = { 'Cache-Control': 'no-store', 'X-AG-Ghost': '1' };
+  if (IMG.test(p)) return new Response('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>', { headers: { ...h, 'Content-Type': 'image/svg+xml' } });
+  if (AUD.test(p)) return new Response(wav(), { headers: { ...h, 'Content-Type': 'audio/wav' } });
+  return null;
+}
+// case-insensitive, decoded-path index of a game's cache (fixes odd characters, spaces, wrong-case references)
+async function norm(id) {
+  const m = IDX.get(id); if (m && Date.now() - m.t < 5000) return m.map;
+  const c = await caches.open('g-' + id), map = new Map();
+  for (const k of await c.keys()) { let p = new URL(k.url).pathname; try { p = decodeURIComponent(p) } catch { } map.set(p.toLowerCase(), k) }
+  IDX.set(id, { t: Date.now(), map }); return map;
+}
+async function liveRead(id, p) {
+  for (const c of await clients.matchAll({ type: 'window' })) {
+    if (c.url.includes('/__g/')) continue;
+    for (let t = 0; t < 2; t++) {
+      const r = await new Promise(ok => { const ch = new MessageChannel(); ch.port1.onmessage = m => ok(m.data); setTimeout(() => ok(null), 10000); c.postMessage({ id, p }, [ch.port2]) });
+      if (r) return new Response(r.b, { headers: { 'Content-Type': r.t, 'Cache-Control': 'no-store' } });
+    }
+  }
+  return null;
+}
+async function serve2(u, id, p) {
+  const c = await caches.open('g-' + id);
+  let hit = await c.match(u.origin + u.pathname);
+  if (!hit && (p === '' || p.endsWith('/'))) hit = await c.match(u.origin + u.pathname + 'index.html');
+  if (!hit) { let d = u.pathname; try { d = decodeURIComponent(d) } catch { } const k = (await norm(id)).get(d.toLowerCase()); if (k) hit = await c.match(k) }
+  if (hit) return hit;
+  return (await liveRead(id, p)) || ghost(p) || new Response('Not found: ' + p, { status: 404 });
+}
+
+// ===== fetch routing =====
 self.addEventListener('fetch', e => {
-  const q = e.request, u = new URL(q.url), m = u.pathname.match(/\/__g\/([^/]+)\/(.*)$/);
-  if (m) e.respondWith(serve(u, m[1], decodeURIComponent(m[2])).then(r => inj(r, q.destination)));
+  const q = e.request, u = new URL(q.url);
+  // launcher asks for a raw network fetch that bypasses everything below
+  if (q.headers.has('x-ag-raw')) { e.respondWith(fetch(q)); return }
+  const m = u.pathname.match(/\/__g\/([^/]+)\/(.*)$/);
+  if (m) {
+    let p = m[2]; try { p = decodeURIComponent(p) } catch { }
+    e.respondWith(serve2(u, m[1], p).then(r => inj(r, q.destination)));
+  }
   else if (q.method != 'GET' || q.headers.has('range') || !/^https?:$/.test(u.protocol)) return;
   else if (u.origin == location.origin) e.respondWith(shellFetch(q));
   else if (CDN.includes(u.hostname)) e.respondWith(shellFetch(q));
@@ -180,21 +228,4 @@ async function inj(r, dest) {
   const re = [/<head[^>]*>/i, /<html[^>]*>/i, /<!doctype[^>]*>/i].find(x => x.test(t));
   t = re ? t.replace(re, m => m + INJ) : INJ + t;
   return new Response(t, { status: r.status, headers: { 'Content-Type': ct, 'Cache-Control': 'no-store' } });
-}
-async function serve(u, id, p) {
-  // 1) uploaded games: unpacked into Cache Storage
-  const hit = await (await caches.open('g-' + id)).match(u.origin + u.pathname);
-  if (hit) return hit;
-  // 2) local-folder games: ask the app tab (holds the folder handle) to read the file live
-  for (const c of await clients.matchAll({ type: 'window' })) {
-    if (c.url.includes('/__g/')) continue;
-    const r = await new Promise(ok => {
-      const ch = new MessageChannel();
-      ch.port1.onmessage = m => ok(m.data);
-      setTimeout(() => ok(null), 3000);
-      c.postMessage({ id, p }, [ch.port2]);
-    });
-    if (r) return new Response(r.b, { headers: { 'Content-Type': r.t, 'Cache-Control': 'no-store' } });
-  }
-  return new Response('Not found: ' + p, { status: 404 });
 }
