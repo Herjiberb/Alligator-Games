@@ -213,6 +213,15 @@ body.nat{--bg:#14100c;--pn:#1e1812;--p2:#2b231b;--ln:#3b3025}body.nat::before{ba
 .dc::after{box-shadow:0 10px 16px #000a,inset 0 1px 0 #ffffff50}
 .dcw::after{content:'';position:absolute;left:6%;right:6%;bottom:-2px;height:10px;background:linear-gradient(#0000,#0000004a);filter:blur(3px);z-index:-1}
 @media(max-width:767px){.dc{padding:0}}
+
+/* ---- Alligator Integrated + loading overlay ---- */
+.aib-in{position:relative;display:flex;align-items:center;gap:18px;padding:18px 20px;border-radius:20px;border:1px solid #3ddc8466;overflow:hidden;flex-wrap:wrap}
+.aib-in::before{content:'';position:absolute;inset:-80%;background:conic-gradient(from 0deg,transparent 0 80%,#3ddc8466 92%,transparent);animation:sp 8s linear infinite}
+.aib-in::after{content:'';position:absolute;inset:1px;border-radius:19px;background:linear-gradient(120deg,#12251c,#101a22 60%,var(--pn))}
+.aib-in>*{position:relative;z-index:1}.aib-l{width:56px;height:56px;flex:none;transition:transform .7s}.aib-in:hover .aib-l{transform:rotate(360deg)}
+.aid{display:inline-block;width:9px;height:9px;margin-left:7px;transform:rotate(45deg);background:linear-gradient(135deg,#3ddc84,#2aa7ff);box-shadow:0 0 8px #3ddc84}
+.ldr{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:#000b}.ldb{width:min(360px,88vw);padding:20px;border-radius:16px;background:var(--pn);border:1px solid var(--ln)}
+.ldt{font-weight:600;margin-bottom:10px}.ldp{height:8px;border-radius:99px;background:var(--p2);overflow:hidden}.ldp i{display:block;height:100%;width:0;background:var(--ac);transition:width .2s}.lds{font-size:12px;color:var(--mu);margin-top:8px}
 </style></head><body><div id="app"></div><div id="toast"></div><div id="modal"></div>
 <script>
 let EDOK=false;localStorage.removeItem('ag_ed');
@@ -904,6 +913,94 @@ Object.assign(A,{
  offrm:async()=>{if(!confirm('Remove all offline copies? Games stay in the store.'))return;for(const id of[...OFF.keys()])await offDel(id);offRefresh()},
  offauto:(t)=>{localStorage.agoffauto=t.checked?'1':'0';if(t.checked&&navigator.onLine)offRun(offList().filter(g=>['none','old'].includes(offSt(g))),1)}});
 addEventListener('online',offRefresh);addEventListener('offline',offRefresh);
+
+/* =====================================================================
+   ALLIGATOR PLUS (merged): GitHub-folder preload + ghosts, Esc lock, Alligator Integrated
+   Needs sw-plus.js imported by sw.js (importScripts('sw-plus.js');)
+   ===================================================================== */
+(()=>{
+/* Esc no longer leaves fullscreen (Chromium Keyboard Lock: Esc goes to the game; hold Esc to leave) */
+document.addEventListener('fullscreenchange',()=>{try{const k=navigator.keyboard;if(!k)return;if(document.fullscreenElement){k.lock&&k.lock(['Escape']).then(()=>toast('Fullscreen: hold Esc to leave')).catch(()=>{})}else k.unlock&&k.unlock()}catch{}});
+
+/* helpers */
+const HS={};let TC=null;
+const isHost=u=>{try{return new URL(u,document.baseURI).origin==location.origin}catch{return false}};
+const encP=p=>p.split('/').map(encodeURIComponent).join('/');
+const pool=async(a,n,f)=>{let i=0;await Promise.all([...Array(Math.min(n,a.length))].map(async()=>{while(i<a.length)await f(a[i++])}))};
+function prog(t,p,s){let e=$('#ldr');if(t==null){e&&e.remove();return}if(!e){document.body.insertAdjacentHTML('beforeend','<div id="ldr" class="ldr"><div class="ldb"><div class="ldt"></div><div class="ldp"><i></i></div><div class="lds"></div></div></div>');e=$('#ldr')}$('.ldt',e).textContent=t;$('.ldp i',e).style.width=(p||0)+'%';$('.lds',e).textContent=s||''}
+async function getRetry(u,n=3){let e;for(let i=0;i<n;i++){try{const r=await fetch(u,{cache:'no-cache',headers:{'x-ag-raw':'1'}});if(r.ok)return r;e=Error(r.status);if(r.status==404)break}catch(x){e=x}await new Promise(r=>setTimeout(r,250*(i+1)))}throw e}
+const putF=(c,base,rel,blob,ct)=>{const t=mt(rel);return c.put(new URL(encP(rel),base).href,new Response(blob,{headers:{'Content-Type':t=='application/octet-stream'&&ct?ct:t}}))};
+function repoInfo(){const r=(localStorage.agrepo||'').trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').replace(/\/$/,''),[rp,br]=r.split('@');if(/^[\w.-]+\/[\w.-]+$/.test(rp||''))return{rp,br:br||'HEAD'};const m=location.hostname.match(/^([^.]+)\.github\.io$/);if(!m)return null;const seg=location.pathname.split('/')[1];return{rp:m[1]+'/'+(seg&&!/\.html?$/.test(seg)?seg:m[1]+'.github.io'),br:'HEAD'}}
+async function ghTree(){const ri=repoInfo();if(!ri)return null;const k=ri.rp+ri.br;if(TC&&TC.k==k&&Date.now()-TC.t<3e5)return TC.v;const r=await fetch('https://api.github.com/repos/'+ri.rp+'/git/trees/'+ri.br+'?recursive=1',{headers:{Accept:'application/vnd.github+json'}});if(!r.ok)return null;const j=await r.json(),v=(j.tree||[]).filter(x=>x.type=='blob');TC={k,t:Date.now(),v};return v}
+
+/* GitHub-folder games: download EVERY file first, then serve them all through the launcher's virtual server */
+async function syncHosted(g,base){
+ const ent=new URL(g.src.url,document.baseURI),dir=new URL('./',ent),entry=decodeURIComponent(ent.pathname.slice(dir.pathname.length)),hurl=base.href+encP(entry);
+ if(Date.now()-(HS[g.id]||0)<6e4&&await caches.has('g-'+g.id))return hurl;
+ const bp=new URL('./',document.baseURI).pathname,dp=decodeURIComponent(dir.pathname.slice(bp.length)),mk='c_hm_'+g.id,had=await caches.has('g-'+g.id),c=await caches.open('g-'+g.id);let man={},fail=0;
+ try{
+  prog('Loading '+g.title,0,'Finding game files…');
+  try{if(had)man=JSON.parse(localStorage[mk]||'{}')}catch{}
+  let tree=null;try{if(dp&&dir.pathname.startsWith(bp))tree=(await ghTree())?.filter(x=>x.path.startsWith(dp)&&!/(^|\/)\./.test(x.path.slice(dp.length)))}catch{}
+  if(tree&&!tree.some(x=>x.path==dp+entry))tree=null;
+  if(tree){const nm={},S=new Set(tree.map(x=>x.path.slice(dp.length)));let n=0;
+   await pool(tree,8,async x=>{const rel=x.path.slice(dp.length);nm[rel]=x.sha;if(!had||man[rel]!=x.sha){try{const r=await getRetry(new URL(encP(x.path),document.baseURI).href);await putF(c,base,rel,await r.blob(),r.headers.get('content-type'))}catch{fail++;delete nm[rel]}}n++;if(n%4==0||n==tree.length)prog('Loading '+g.title,n/tree.length*100,n+' / '+tree.length+' files')});
+   for(const k of await c.keys()){try{if(!S.has(decodeURIComponent(new URL(k.url).pathname.slice(base.pathname.length))))await c.delete(k)}catch{}}
+   try{localStorage[mk]=JSON.stringify(nm)}catch{}
+  }else{ // no file list available: crawl the game's HTML/JS/CSS for every asset it references
+   const seen=new Map(),q=[ent.href],RX=/["'`(]([^"'`()\s<>\\]+?\.(?:png|jpe?g|gif|webp|svg|avif|ico|mp3|ogg|wav|m4a|json|m?js|css|wasm|woff2?|ttf|otf|glb|gltf|bin|obj|txt|html?|atlas|fnt|xml))(?:[?#][^"'`()\s]*)?["'`)]/gi;
+   while(q.length&&seen.size<2000){const b=q.splice(0,8);await Promise.all(b.map(async u=>{if(seen.has(u))return;seen.set(u,null);try{const r=await getRetry(u),bl=await r.blob();seen.set(u,[bl,r.headers.get('content-type')]);
+    if(/\.(html?|m?js|css|json|xml|atlas)$/i.test(new URL(u).pathname)){const t=await bl.text();for(const m of t.matchAll(RX)){if(/^(data:|blob:)/i.test(m[1]))continue;for(const bs of[u,ent.href]){try{const a=new URL(m[1],bs);a.hash='';a.search='';if(a.href.startsWith(dir.href)&&!seen.has(a.href)&&!q.includes(a.href))q.push(a.href)}catch{}}}}}catch{}
+    prog('Loading '+g.title,Math.min(95,seen.size*2),seen.size+' files found')}))}
+   for(const[u,v]of seen)if(v)await putF(c,base,decodeURIComponent(new URL(u).pathname.slice(dir.pathname.length)),v[0],v[1])}
+  HS[g.id]=Date.now();if(fail)toast(fail+' file(s) failed to load; missing images get blank stand-ins');
+  return hurl;
+ }catch(e){console.error(e);toast('Could not preload files, loading directly');return g.src.url}
+ finally{prog(null)}}
+
+/* local-folder games: copy the whole folder into the cache up front (fast, no 3s live-read timeouts) */
+async function syncFolder(g,base,d){
+ if(Date.now()-(HS[g.id]||0)<6e4&&await caches.has('g-'+g.id))return;
+ const mk='c_fm_'+g.id,had=await caches.has('g-'+g.id),c=await caches.open('g-'+g.id);let man={};try{if(had)man=JSON.parse(localStorage[mk]||'{}')}catch{}
+ try{prog('Loading '+g.title,0,'Reading folder…');const L=[];const walk=async(h,pre,dep)=>{for await(const[n,x]of h.entries()){if(n[0]=='.'||n=='node_modules')continue;if(x.kind=='file')L.push([pre+n,x]);else if(dep<12)await walk(x,pre+n+'/',dep+1)}};await walk(d,'',0);
+  const nm={};let n=0,fail=0;
+  await pool(L,6,async([rel,fh])=>{try{const f=await fh.getFile(),sg=f.size+':'+f.lastModified;nm[rel]=sg;if(!had||man[rel]!=sg)await putF(c,base,rel,f,f.type)}catch{fail++}n++;if(n%5==0||n==L.length)prog('Loading '+g.title,n/L.length*100,n+' / '+L.length+' files')});
+  const S=new Set(L.map(x=>x[0]));for(const k of await c.keys()){try{if(!S.has(decodeURIComponent(new URL(k.url).pathname.slice(base.pathname.length))))await c.delete(k)}catch{}}
+  try{localStorage[mk]=JSON.stringify(nm)}catch{}HS[g.id]=Date.now();if(fail)toast(fail+' file(s) could not be read')
+ }finally{prog(null)}}
+
+const _prep=prep;
+prep=async g=>{const s=g.src||{};
+ if(s.type=='url'&&isHost(s.url)&&navigator.serviceWorker){await navigator.serviceWorker.ready;return syncHosted(g,new URL('__g/'+g.id+'/',document.baseURI))}
+ const u=await _prep(g);
+ if(s.type=='folder'&&live[g.id])await syncFolder(g,new URL('__g/'+g.id+'/',document.baseURI),live[g.id]);
+ return u};
+
+/* Alligator Integrated: flagged games (editor > General) get a perks panel, banner, shelf and badge.
+   Future per-game adapters register here:  AGI.adapters['game-id']=(win,ag)=>{...}  (win = the game's window) */
+const AGI=window.AGI={adapters:{},
+ canvas:w=>[...w.document.querySelectorAll('canvas')].sort((a,b)=>b.width*b.height-a.width*a.height)[0]||null,
+ probe:w=>{const o={},re=/score|lives?|level|health|hp|coins?|gold|ammo|wave|combo|kills?/i;for(const k of Object.keys(w)){if(!re.test(k))continue;try{const v=w[k];if(typeof v=='number'||(typeof v=='string'&&v.length<30))o['window.'+k]=v}catch{}}
+  try{for(const m of w.document.body.innerText.matchAll(/(score|lives|level|health|coins|gold|ammo|wave|kills)\W{0,3}(\d[\d,.]*)/gi))o['HUD '+m[1].toLowerCase()]=m[2]}catch{}return o}};
+const AIT=()=>`<div class="rounded-xl border border-[#3ddc8455] bg-[#3ddc8412] p-2 space-y-1.5"><div class="flex items-center justify-between"><b class="dp text-sm gt">Alligator Integrated</b><span id="aist" class="text-[11px] text-white/70">linking…</span></div><div class="flex flex-wrap gap-1.5"><button tabindex="-1" data-a="aishot" class="c2">Screenshot</button><button tabindex="-1" data-a="aiprobe" class="c2">Scan runtime</button></div><div id="aiout" class="text-[11px] text-white/70"></div></div>`;
+const AIBAN=()=>{const l=V().filter(g=>g.ai&&!up(g));return`<section class="aiban mt-5"><div class="aib-in"><div class="aib-l">${LOGO}</div><div class="min-w-0 flex-1" style="min-width:220px"><div class="text-xs font-bold tracking-widest text-[var(--ac)]">NEW · ALLIGATOR INTEGRATED</div><h2 class="dp text-2xl font-extrabold gt" style="margin:2px 0;border:0;padding:0">Games that talk to the launcher</h2><p class="text-[var(--mu)] text-sm">Play select games here and unlock perks the browser alone can't give: a live runtime link, screenshots, practice tools and more. Built to keep working on new game versions.</p></div>${l.length?`<div class="flex gap-2">${l.slice(0,3).map(g=>`<a href="#/game/${g.id}"><img class="w-24 aspect-video object-cover rounded-lg border border-white/10" src="${cov(g)}"></a>`).join('')}</div>`:'<span class="chip on">First games coming soon</span>'}</div></section>`};
+const AIPANEL=g=>`<div class="pn p-4" style="border-color:#3ddc8466;background:linear-gradient(120deg,#3ddc8418,var(--pn))"><div class="flex items-center gap-2"><span class="w-8 h-8 block">${LOGO}</span><div><b class="dp gt text-lg leading-tight">Alligator Integrated</b><div class="text-xs text-[var(--mu)]">Extra perks when played in this launcher</div></div></div><ul class="text-sm text-[var(--mu)] mt-3 list-disc pl-5 space-y-0.5"><li>Live runtime link</li><li>Screenshots and runtime scan</li><li>More perks added as the game is integrated</li></ul></div>`;
+
+const _home=home;home=function(r){_home(r);const q=$('#q');if(q&&!$('.aiban'))q.parentElement.insertAdjacentHTML('beforebegin',AIBAN())};
+const _res=res;res=function(){_res();const r=$('#res');if(r&&!F.q&&!F.cat&&!F.st){const s=row('Alligator Integrated','Extra perks that only work in this launcher',V().filter(g=>g.ai&&!up(g)));if(s){r.insertAdjacentHTML('afterbegin',s);obs()}}};
+const _gp=gpage;gpage=function(g){let s=_gp(g);if(g&&g.ai)s=s.replace('<aside class="ga space-y-4">','<aside class="ga space-y-4">'+AIPANEL(g));return s};
+const og=S.general;S.general=()=>og()+CB('ai','Alligator Integrated','This game works with launcher perks (runtime link, screenshot, scan).');
+
+const link=()=>{const g=gm(CUR),s=$('#aist');if(!g||!g.ai||!s)return;let w;try{w=$('#gf').contentWindow;w.document}catch{s.textContent='blocked';return}s.textContent=w.__ag?'linked':'basic link';const a=AGI.adapters[CUR];if(a)try{a(w,w.__ag)}catch(e){console.error(e)}};
+const _play=play;play=async function(id){await _play(id);const g=gm(id),b=$('#bar2');if(!g||!g.ai||!b||$('#aist'))return;b.insertAdjacentHTML('beforeend',AIT());$('#gf')?.addEventListener('load',()=>setTimeout(link,300));link()};
+Object.assign(A,{
+ aishot:async()=>{const w=$('#gf')?.contentWindow;let c;try{c=AGI.canvas(w)}catch{}if(!c)return toast('No canvas found');await new Promise(r=>w.requestAnimationFrame(()=>r()));let d;try{d=c.toDataURL('image/png')}catch{return toast('Capture blocked by the game')}const a=document.createElement('a');a.href=d;a.download=(CUR||'game')+'-'+Date.now()+'.png';a.click();toast('Screenshot saved')},
+ aiprobe:()=>{let p={};try{p=AGI.probe($('#gf').contentWindow)}catch{}const k=Object.keys(p);$('#aiout').textContent=k.length?k.map(x=>x+' = '+p[x]).join(' · '):'Nothing readable yet. This game needs an adapter.'}});
+/* diamond badge on cards */
+let raf=0;const dec=()=>{raf=0;$$('a.card[href^="#/game/"]').forEach(a=>{const g=gm(a.getAttribute('href').slice(7)),t=a.querySelector('.font-semibold.truncate');if(g&&g.ai&&t&&!t.querySelector('.aid'))t.insertAdjacentHTML('beforeend','<span class="aid" title="Alligator Integrated"></span>')});$$('a.dc[data-id]').forEach(a=>{const g=gm(a.dataset.id),t=a.querySelector('.ft');if(g&&g.ai&&t&&!t.querySelector('.aid'))t.insertAdjacentHTML('beforeend','<span class="aid"></span>')})};
+new MutationObserver(()=>{if(!raf)raf=requestAnimationFrame(dec)}).observe(app,{childList:true,subtree:true});
+})();
+
 (async()=>{if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
  await dropPH();await load();await offBoot();render();
  // catalog refresh runs in the background so a missing/slow connection never blocks the app
