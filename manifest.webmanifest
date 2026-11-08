@@ -1,10 +1,10 @@
 {
-  "id": "./",
+  "id": "/Alligator/",
   "name": "Alligator Games",
   "short_name": "Alligator",
   "description": "Alligator Games – a game store and launcher that works offline.",
-  "start_url": "./?source=pwa",
-  "scope": "./",
+  "start_url": "/Alligator/?source=pwa",
+  "scope": "/Alligator/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
