@@ -285,6 +285,33 @@ body.swp{font-size:13px;line-height:1.25}
 @media(min-width:768px){.swp footer{padding-bottom:6px}}
 .swp .chip{padding:0 5px!important;font-size:10px!important}
 .swp .btn{padding:2px 8px!important;min-height:0!important;font-size:12px}
+.swg main .gl .aspect-video{max-width:320px}
+.swg main .gl img[data-a=shot]{height:30px!important;width:auto}
+.swg main .gl .flex.overflow-x-auto{margin-top:4px!important;gap:3px!important}
+.swg main aside img.aspect-video{aspect-ratio:auto!important;height:64px;width:100%}
+.swg main aside{max-width:100%}
+@media(min-width:700px){.swg main .grid[class*="1fr_340px"]{grid-template-columns:minmax(0,1fr) 250px!important}}
+.swp #hero{height:210px!important}
+@media(min-width:768px){.swp #hero{height:220px!important}}
+.swp #hero .hs>div:last-child,.swp #hero .relative.h-full{padding:8px 34px!important;gap:12px!important}
+.swp #hero .hs h2{font-size:1.35rem!important}
+.swp #hero .hs p,.swp #hero .hs .text-sm{font-size:12px!important}
+.swp #hero .hs .flex-col{gap:5px!important}
+.swp #hero .hs a>img{width:100%!important;max-width:280px;margin-left:auto;display:block;aspect-ratio:16/9;object-fit:cover}
+.swp main a.card.h-28{height:88px!important}
+.swp main a.card.h-28>img{left:auto!important;right:0;width:auto!important;max-width:60%;object-fit:contain!important;opacity:.75!important}
+.ug{position:fixed;inset:0;z-index:99999;background:#0f1412;color:#e8efe9;overflow:auto;display:flex;font:15px/1.5 Inter,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+.ug *{box-sizing:border-box}
+.ug .ugi{margin:auto;width:100%;max-width:820px;padding:28px 18px calc(28px + env(safe-area-inset-bottom))}
+.ug h1{font:800 28px/1.15 'Bricolage Grotesque',Inter,sans-serif;margin:14px 0 6px}
+.ug p{color:#93a39a;margin:0 0 20px}
+.ug .ugg{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.ug button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:18px;background:#19201d;border:1.5px solid #2d3934;transition:border-color .2s,background .2s,transform .15s}
+.ug button:hover,.ug button:focus-visible{border-color:#3ddc84;background:#1e2823}.ug button:active{transform:scale(.97)}
+.ug button svg{width:56px;height:56px}
+.ug button b{font:700 17px 'Bricolage Grotesque',Inter,sans-serif}
+.ug button span{color:#93a39a;font-size:13px}
+.ug .ugn{font-size:12px;color:#93a39a;margin-top:16px}
 </style></head><body><div id="app"></div><div id="toast"></div><div id="modal"></div>
 <script>
 let EDOK=false;localStorage.removeItem('ag_ed');
@@ -404,7 +431,7 @@ async function fillStg(id){if(!$('#stb'))return;const u=await usage(id);if(!$('#
  $('#stl').innerHTML=rows.length?`<div class="text-[var(--mu)] pt-2 border-t border-[var(--ln)]">Older data from before per-game tracking. If it belongs to this game (for example saved worlds), move it in so it is tracked here.</div>`+rows.join(''):''}
 function setpage(){const m=FM();return`<div class="max-w-[720px] mx-auto px-5 py-6"><h1 class="text-3xl font-extrabold mb-4">Settings</h1><div class="pn p-5"><h2 class="text-xl font-bold mb-3">Tab favicon</h2>${[['app','App favicon','Always the alligator logo (default).'],['game','Game favicon','Uses the game\'s own icon while playing. Gator logo if the game has none.'],['dual','Dual favicon','Game icon with a small gator badge in the bottom right. Gator logo only if the game has no icon.']].map(([v,t,d])=>`<label class="flex gap-3 mb-3 items-start cursor-pointer"><input type="radio" name="fm" data-a="favm" data-v="${v}" ${m==v?'checked':''} class="mt-1.5"><span><b>${t}</b><div class="text-[var(--mu)] text-xs">${d}</div></span></label>`).join('')}</div>${DEVSET()}${UISET()}${RSET()}${offSet()}</div>`}
 /* ---------- IndexedDB ---------- */
-const dbp=new Promise((ok,no)=>{const r=indexedDB.open('gator',2);r.onupgradeneeded=()=>['games','packs','likes','handles','plays','creators'].forEach(s=>r.result.objectStoreNames.contains(s)||r.result.createObjectStore(s));r.onsuccess=()=>ok(r.result);r.onerror=no});
+const dbp=new Promise((ok,no)=>{const r=indexedDB.open('gator',3);r.onupgradeneeded=()=>['games','packs','likes','handles','plays','creators','prefs'].forEach(s=>r.result.objectStoreNames.contains(s)||r.result.createObjectStore(s));r.onsuccess=()=>ok(r.result);r.onerror=no});
 const tx=async(s,m,f)=>{const d=await dbp;return new Promise((ok,no)=>{const t=d.transaction(s,m),o=f(t.objectStore(s));t.oncomplete=()=>ok(o&&o.result);t.onerror=no})};
 const dget=(s,k)=>tx(s,'readonly',o=>o.get(k)),dset=(s,k,v)=>tx(s,'readwrite',o=>o.put(v,k)),ddel=(s,k)=>tx(s,'readwrite',o=>o.delete(k)),dall=s=>tx(s,'readonly',o=>o.getAll()),dkeys=s=>tx(s,'readonly',o=>o.getAllKeys());
 /* ---------- Safe big-output helpers: huge text is kept in memory (OUT), never pushed whole into a textarea or clipboard blindly ---------- */
@@ -471,6 +498,19 @@ document.addEventListener('pointerdown',e=>{const t=e.target.closest&&e.target.c
 document.addEventListener('pointermove',e=>{if(d)set(d,idx(e,d))});
 document.addEventListener('pointerup',e=>{if(!d)return;const t=d;d=null;location.hash='#'+SWL[set(t,idx(e,t))][0]});
 document.addEventListener('pointercancel',()=>{d=null})})();
+
+const UIG={default:'',clean:'clean',nat:'nat'};
+async function uiGate(){let v;try{v=await dget('prefs','ui')}catch{return}
+ if(v&&v in UIG){const a=UIG[v];if(a)localStorage.agui=a;else localStorage.removeItem('agui');return}
+ window.UIGATE=1;const nat=!MOB&&innerWidth>=768,A='fill="none" stroke-width="2.5" stroke-linejoin="round"';
+ const O=[['default','Default','Compact, flat and rigid, with swamp greens and a drag-bar menu.',`<svg viewBox="0 0 48 48" ${A} stroke-linecap="square"><rect x="5" y="7" width="38" height="34" stroke="#c4ec5a"/><path d="M5 31l6-4 6 4 6-4 6 4 6-4 6 4" stroke="#7dbb55"/><path d="M14 31V15M14 20l-4-3M14 23l4-3M31 31V12M31 17l-4-3M31 21l4-3" stroke="#c4ec5a"/></svg>`],
+ ['clean','Clean','A readable, modern look with roomy cards and soft corners.',`<svg viewBox="0 0 48 48" ${A} stroke-linecap="round"><rect x="6" y="6" width="36" height="36" rx="10" stroke="#3ddc84"/><rect x="11" y="11" width="26" height="14" rx="5" stroke="#3ddc84"/><path d="M11 32h18M11 37h10" stroke="#93a39a"/></svg>`]];
+ if(nat)O.push(['nat','Natural','Disc cases stacked on a wooden shelf. Computers only.',`<svg viewBox="0 0 48 48" ${A} stroke-linecap="round"><path d="M4 41h40" stroke="#d9a35f" stroke-width="4"/><rect x="8" y="14" width="8" height="24" rx="1.5" stroke="#d9a35f"/><rect x="18" y="8" width="8" height="30" rx="1.5" stroke="#e8c48a"/><rect x="28" y="16" width="8" height="22" rx="1.5" stroke="#d9a35f"/><path d="M12 19v5M22 13v5M32 21v4" stroke="#93a39a"/></svg>`]);
+ const e=document.createElement('div');e.className='ug';e.setAttribute('role','dialog');e.setAttribute('aria-modal','true');
+ e.innerHTML=`<div class="ugi"><span style="display:block;width:44px;height:44px">${LOGO}</span><h1>Choose your look</h1><p>Pick how Alligator Games should look on this device. You can change it later in Settings.</p><div class="ugg">${O.map(o=>`<button data-v="${o[0]}">${o[3]}<b>${o[1]}</b><span>${o[2]}</span></button>`).join('')}</div><div class="ugn">Your choice is saved in this browser.</div></div>`;
+ document.body.appendChild(e);
+ await new Promise(ok=>e.addEventListener('click',async ev=>{const b=ev.target.closest('button');if(!b)return;const v=b.dataset.v;b.disabled=true;try{await dset('prefs','ui',v)}catch{}
+  if(UIG[v])localStorage.agui=UIG[v];else localStorage.removeItem('agui');window.UIGATE=0;e.remove();ok()}))}
 const hdr=r=>`<header class="sticky top-0 z-30 backdrop-blur bg-[#0f1412]/80 border-b border-[var(--ln)]"><div class="max-w-[1280px] mx-auto px-3 sm:px-5 h-14 md:h-16 flex items-center gap-3 md:gap-6" style="padding-top:env(safe-area-inset-top)"><a href="#/" class="flex items-center gap-3"><span class="w-9 h-9 block transition duration-700 hover:rotate-[360deg]">${LOGO}</span><span class="dp gt font-extrabold text-lg hidden sm:block">Alligator Games</span></a>${swpOn()?dragbar(r,'dtop'):''}<nav class="hidden md:flex gap-1">${[['/','Store'],['/up','Upcoming'],['/creators','Creators'],['/lib','Liked'],['/stats','Stats']].map(([p,t])=>`<a href="#${p}" class="px-3 py-1.5 rounded-lg transition ${r==p?'bg-[var(--p2)] text-[var(--ac)]':'text-[var(--mu)] hover:text-white'}">${t}</a>`).join('')}</nav><span class="flex-1"></span>${offHdr()}<a href="#/settings" title="Settings" class="w-10 h-10 rounded-full border border-[var(--ln)] bg-[var(--p2)] grid place-items-center hover:scale-110 hover:rotate-[90deg] transition duration-500"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></a><button data-a="prof" title="Profile" class="w-10 h-10 rounded-full border border-[var(--ln)] bg-[var(--p2)] grid place-items-center hover:scale-110 hover:rotate-[360deg] transition duration-500"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z"/></svg></button></div></header>`;
 const NAVI={'/':'<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>','/up':'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>','/creators':'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2.5.7 4 2.5 4 6"/>','/lib':'<path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z"/>'};
 const bnav=r=>swpOn()?dragbar(r,'dbot'):`<nav class="bn">${[['/','Store'],['/up','Upcoming'],['/creators','Creators'],['/lib','Liked'],['/stats','Stats']].map(([p,t])=>`<a href="#${p}" class="${r==p?'on':''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${NAVI[p]}</svg>${t}</a>`).join('')}</nav>`;
@@ -899,7 +939,7 @@ function natPaint(){$$('.dc:not([data-p])').forEach(e=>{e.dataset.p=1;const g=gm
  const o=b[bk];if(!o)return;const r=o.r/o.n/255,g2=o.g/o.n/255,bl=o.b/o.n/255,mx=Math.max(r,g2,bl),mn=Math.min(r,g2,bl),dl=mx-mn;let hu=0;if(dl){hu=mx==r?((g2-bl)/dl)%6:mx==g2?(bl-r)/dl+2:(r-g2)/dl+4;hu=Math.round(hu*60);if(hu<0)hu+=360}
  const l=(mx+mn)/2,s=dl?dl/(1-Math.abs(2*l-1)):0,v=[hu,Math.round(Math.min(70,Math.max(28,s*100))),Math.round(Math.min(42,Math.max(26,l*100)))];DOM[k]=v;ap(v);clearTimeout(DT);DT=setTimeout(()=>{try{localStorage.agdom=JSON.stringify(DOM)}catch{}},500)}catch{}};im.src=cov(g)})}
 new MutationObserver(()=>{if($('.dc:not([data-p])'))setTimeout(natPaint,20)}).observe(document.body,{childList:true,subtree:true});
-const natBody=()=>{const b=document.body.classList,h=location.hash;b.toggle('nat',NAT());const w=localStorage.agui!='clean'&&!NAT()&&!/^#\/(editor|play)/.test(h);b.toggle('swp',w);b.toggle('swg',w&&h.startsWith('#/game/'))};
+const natBody=()=>{const b=document.body.classList,h=location.hash;b.toggle('nat',NAT());const w=!window.UIGATE&&localStorage.agui!='clean'&&!NAT()&&!/^#\/(editor|play)/.test(h);b.toggle('swp',w);b.toggle('swg',w&&h.startsWith('#/game/'))};
 const natCard=(g,sc)=>{const t=(TM[g.id]||{}).t||0,nw=g.date&&!up(g)&&Date.now()-new Date(g.date)<14*864e5,hu=Math.abs(hs(g.id||g.title||'x'))%360;
  return`<a href="#/game/${g.id}" data-id="${g.id}" class="dc ${sc?'w-[210px] shrink-0 snap-start':''}" style="--hu:${hu};--sa:45%;--li:34%;--ry:${18+hu%13}deg;--rz:${((hu%7)-3)/4}deg"><div class="dcw"><div class="disc"></div><div class="dcs"></div><div class="dcase"><div class="f-l"><span>${h(g.title)}</span></div><div class="f-r"></div><div class="f-t"></div><div class="f-k"><i class="bc"></i><b>ALLIGATOR GAMES</b><span>${h(g.title)}</span></div>
 <div class="f-f"><i class="fx"></i><i class="fy"></i><div class="fh"><span>ALLIGATOR GAMES</span><span class="flex gap-1">${isMob(g)?IC_PH:''}${isPc(g)?IC_PC:''}</span></div><div class="fa"><img loading="lazy" src="${cov(g)}" class="${RBL(g)}"></div>
@@ -912,7 +952,7 @@ Object.assign(A,{devset:(t,d)=>{F.dev=d.v;if(d.v=='auto')localStorage.removeItem
  npsh:()=>{const l=npList().filter(g=>!RBLK(g));if(!l.length)return toast('Nothing unlocked to pick');const g=l[Math.floor(Math.random()*l.length)];NPX=g.id;localStorage.agnow=g.id;npRe();toast('Surprise: '+g.title)},
  npx:()=>{NPH=1;$('#np')?.remove();document.body.classList.remove('hasnp')},
  npsw:()=>{localStorage.agnp=npOn()?'0':'1';render()},
- uimode:(t,d)=>{if(d.v)localStorage.agui=d.v;else localStorage.removeItem('agui');render()}});
+ uimode:(t,d)=>{if(d.v)localStorage.agui=d.v;else localStorage.removeItem('agui');dset('prefs','ui',d.v||'default').catch(()=>{});render()}});
 matchMedia('(min-width:768px)').addEventListener('change',()=>{if(localStorage.agui=='nat'&&!$('#gf'))render()});
 
 /* ---------- Download games (editor) ---------- */
@@ -1106,7 +1146,7 @@ new MutationObserver(()=>{if(!raf)raf=requestAnimationFrame(dec)}).observe(app,{
 })();
 
 (async()=>{if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
- await dropPH();await load();await offBoot();render();
+ await dropPH();await load();await offBoot();await uiGate();render();
  // catalog refresh runs in the background so a missing/slow connection never blocks the app
  const sig=()=>G.map(g=>g.id+g.sig+g.status).join();const b=sig();
  try{if(navigator.onLine)await Promise.race([cat(),new Promise(r=>setTimeout(r,8000))]);await load();await offBoot()}catch{}
