@@ -1,0 +1,22 @@
+# similar.txt: which onboarding games each store game is similar to.
+# Format: game-id | very: id1, id2 | mild: id3
+# Edited in the editor (Similar tags). Put this file next to index.html.
+bird-rows | very: candycrush | mild: 2048, tetris
+block-game-ultimate-neo | very: terraria | mild: minecraft
+blood-gummy-battle-royale | very: fortnite | mild: roblox, cod
+butter | mild: angrybirds
+cave-detonation | mild: solitaire, 2048
+corn-pop | very: angrybirds
+corn-pop-2 | very: angrybirds
+cube-crusher | mild: 2048
+earthy-racers | very: forza, asphalt | mild: nfs, mariokart
+frog-hop | mild: flappy, subway, templerun
+infinite-wipe-glitch | very: geometrydash
+infinite-wipe-glitch-2 | very: geometrydash
+mamas-cold-treats | mild: stardew, animalcrossing
+plants-vs-lawn-mowers | very: pvz
+rogue-ladybird | mild: terraria
+rough-lifemickle | very: gta | mild: fallout
+sanguine-fighters | very: smash | mild: doom
+the-grand-todd | very: escape | mild: gta, amongus
+the-rogue-ladybird | mild: terraria
