@@ -1,8 +1,8 @@
 // Alligator Games – service worker (merged sw.js + sw-plus.js)
 // Virtual file server for games at /__g/<gameId>/<path>, plus PWA app shell.
 // App shell: index, sw and the few CDN assets are cached so the store opens fully offline (games come from the offline library).
-const SHELL = 'ag-shell-v3', CDN = ['cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
-const PRE = ['./', 'index.html', 'catalog.txt', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap'];
+const SHELL = 'ag-shell-v4', CDN = ['cdn.tailwindcss.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+const PRE = ['./', 'index.html', 'catalog.txt', 'account.js', 'achievements.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'https://cdn.tailwindcss.com', 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Inter:wght@400;500;600&display=swap'];
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(SHELL).then(c => Promise.all(PRE.map(u => fetch(u, { cache: 'reload', mode: u.startsWith('http') ? 'no-cors' : 'same-origin' }).then(r => (r.ok || r.type == 'opaque') && c.put(u, r)).catch(() => { })))));
@@ -11,7 +11,7 @@ self.addEventListener('activate', e => e.waitUntil(Promise.all([clients.claim(),
 const race = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(Error('timeout')), ms))]);
 // pages + catalog: network with a short timeout, then cache (so flaky wifi never hangs the app); everything else: cache first, refresh in background
 async function shellFetch(q) {
-  const c = await caches.open(SHELL), u = new URL(q.url), nav = q.mode == 'navigate', fresh = nav || /catalog/.test(u.pathname);
+  const c = await caches.open(SHELL), u = new URL(q.url), nav = q.mode == 'navigate', fresh = nav || /catalog|account\.js/.test(u.pathname);
   const hit = await c.match(q, { ignoreSearch: nav });
   const net = fetch(q).then(r => { if (r && (r.ok || r.type == 'opaque')) c.put(q, r.clone()); return r }); net.catch(() => { });
   if (fresh) { try { return await race(net, 3000) } catch { return hit || (nav && ((await c.match('index.html')) || (await c.match('./')))) || Response.error() } }
@@ -77,6 +77,7 @@ self.addEventListener('fetch', e => {
     let p = m[2]; try { p = decodeURIComponent(p) } catch { }
     e.respondWith(serve2(u, m[1], p).then(r => inj(r, q.destination)));
   }
+  else if (u.hostname.endsWith('.supabase.co')) return; // accounts: always straight to the network
   else if (q.method != 'GET' || q.headers.has('range') || !/^https?:$/.test(u.protocol)) return;
   else if (u.origin == location.origin) e.respondWith(shellFetch(q));
   else if (CDN.includes(u.hostname)) e.respondWith(shellFetch(q));
