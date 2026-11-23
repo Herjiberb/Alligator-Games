@@ -1309,9 +1309,11 @@ S.similar=()=>`<h2 style="margin-top:0">Similar tags</h2><p class="d mb-3">Say w
 </script><script>window.addEventListener("error",function(e){window.__acErr=e.message});</script><script>
 /* Alligator Games accounts (Supabase REST, no library). Loaded after the main script. */
 (()=>{
+const MISS=['TM','L','CUR','PZ','gm','fmtT','LOGO','tdk','dset','ddel','render','modal','toast','shell','A','h','$'].filter(n=>{try{return eval('typeof '+n)=='undefined'}catch{return 1}});if(MISS.length){window.__acErr='your page is missing: '+MISS.join(', ');console.warn(window.__acErr)}
+const GA=()=>{try{if(typeof AGA!='undefined')return AGA}catch{}try{return JSON.parse(localStorage.agach||'{}')}catch{return{}}};
 const U='https://iczsyubetvunvlblxquv.supabase.co',K='sb_publishable_gSex7q0Zz2lGjjbet8GgTg_U41jirdY';
 const ld=(k,d)=>{try{return JSON.parse(localStorage[k])||d}catch{return d}},sv=(k,v)=>{try{localStorage[k]=JSON.stringify(v)}catch{}},cl=o=>JSON.parse(JSON.stringify(o));
-let S=ld('agacct',null),Y=ld('agsync',{}),CL=null,REV=0,BUSY=0,LT,FOL=null,MP=null,AM='in',CS={t:'top',q:'',o:0};
+let S=ld('agacct',null),Y=ld('agsync',{}),CL=null,REV=0,BUSY=0,LE='',LT,FOL=null,MP=null,AM='in',CS={t:'top',q:'',o:0};
 Y.pm??={};Y.ok??={};Y.lk??={};const CC=new Map(),ys=()=>sv('agsync',Y);
 const st=document.createElement('style');st.textContent='.ai{width:100%;padding:8px 10px;margin:2px 0 10px;border-radius:10px;background:var(--p2);border:1px solid var(--ln);color:#fff}.aL{font-size:12px;color:var(--mu)}.agb{position:fixed;z-index:60;right:16px;bottom:84px;max-width:300px}';document.head.append(st);
 /* ---- http ---- */
@@ -1333,23 +1335,24 @@ function dlt(T){const o={};for(const id in T){const e=T[id],p=Y.pm[id]||{t:0,s:0
 function add(g,x){for(const id in x){const a=g[id]??={t:0,s:0,l:0,last:0,d:{}},b=x[id];a.t+=b.t;a.s+=b.s;a.l=Math.max(a.l,b.l);a.last=Math.max(a.last,b.last);for(const k in b.d)a.d[k]=(a.d[k]||0)+b.d[k]}}
 const vw=()=>{const n=cl(CL||{g:{},k:[],a:{}});add(n.g,dlt(TM));n.k=[...L];return n};
 async function pull(){const r=await api(`/rest/v1/ag_stats?select=z,rev&user_id=eq.${S.id}`);if(r[0]){CL=dec(await unz(r[0].z));REV=r[0].rev}else{CL={g:{},k:[],a:{}};REV=0}}
-async function push(min=1){if(!S||BUSY||!Y.ok[S.id])return;BUSY=1;try{const snap=cl(TM),x=dlt(snap);if(!Y.ld&&!Y.ad&&tot(x)<min)return;
- for(let i=0;i<3;i++){if(!CL||i)await pull();const n=cl(CL);add(n.g,x);if(Y.ld)n.k=[...L];n.a=mA(n.a||{},AGA);
+async function push(min=1){if(!S||BUSY||!Y.ok[S.id])return;BUSY=1;LE='';try{const snap=cl(TM),x=dlt(snap);if(!Y.ld&&!Y.ad&&tot(x)<min)return;
+ for(let i=0;i<3;i++){if(!CL||i)await pull();const n=cl(CL);add(n.g,x);if(Y.ld)n.k=[...L];n.a=mA(n.a||{},GA());
   const r=await api('/rest/v1/rpc/ag_push',{m:'POST',b:{p_z:await zip(enc(n)),p_rev:REV,p_total:tot(n.g),p_games:Object.values(n.g).filter(e=>e.t>0).length,p_likes:n.k.length}});
-  if(r>0){CL=n;REV=r;Y.pm=snap;Y.ld=0;Y.ad=0;ys();CC.clear();return}}}catch(e){console.warn('sync',e.message)}finally{BUSY=0}}
-async function lk(){let df=0;for(const g in AGA)for(const i in AGA[g])if(!CL.a[g]?.[i])df=1;if(df)Y.ad=1;mA(AGA,CL.a);try{localStorage.agach=JSON.stringify(AGA)}catch{}
+  if(r>0){CL=n;REV=r;Y.pm=snap;Y.ld=0;Y.ad=0;ys();CC.clear();return}}}catch(e){LE=e.message;console.warn('sync',e.message)}finally{BUSY=0}}
+async function lk(){const ga=GA();let df=0;for(const g in ga)for(const i in ga[g])if(!CL.a[g]?.[i])df=1;if(df)Y.ad=1;mA(ga,CL.a);try{localStorage.agach=JSON.stringify(ga)}catch{}
  const first=!Y.lk[S.id],t=new Set(Y.ld&&!first?L:CL.k);if(first){L.forEach(i=>t.add(i));Y.ld=1}
  for(const i of[...L])if(!t.has(i)){L.delete(i);await ddel('likes',i)}for(const i of t)if(!L.has(i)){L.add(i);await dset('likes',i,1)}Y.lk[S.id]=1;ys()}
+const ask=n=>modal(`<h2 class="text-xl font-extrabold mb-2">Sync this device?</h2><p class="text-sm text-[var(--mu)] mb-4">This device has <b class="text-white">${fmtT(n)}</b> of play time from before you signed in. Sync it to <b class="text-white">@${h(S.un)}</b>? It is marked as synced and can never be counted twice. Progress is not included.</p><div class="flex gap-2"><button class="btn" data-a="ays">Sync it</button><button class="btn" data-a="ayn">Don't sync</button></div>`);
 async function started(j){setS(j);await pull();await lk();const x=dlt(TM),n=tot(x);
- if(n>0&&!Y.ok[S.id])modal(`<h2 class="text-xl font-extrabold mb-2">Sync this device?</h2><p class="text-sm text-[var(--mu)] mb-4">This device has <b class="text-white">${fmtT(n)}</b> of play time from before you signed in. Sync it to <b class="text-white">@${h(S.un)}</b>? It is marked as synced and can never be counted twice. Progress is not included.</p><div class="flex gap-2"><button class="btn" data-a="ays">Sync it</button><button class="btn" data-a="ayn">Don't sync</button></div>`);
+ if(n>0&&!Y.ok[S.id])ask(n);
  else{Y.ok[S.id]=1;ys();push()}
  toast('Signed in as @'+S.un);render()}
 /* ---- hooks into the main app ---- */
 const _S=typeof STATS=='function'?STATS:null;if(_S)STATS=function(){if(!S||!CL)return _S();const r=TM;TM=vw().g;try{return _S()}finally{TM=r}};
 window.acctNote=()=>S?'Synced to your account @'+h(S.un)+'.':'Stored on this device. <a href="#/account" class="underline text-[var(--ac)]">Sign in</a> to sync across devices.';
 window.acDecor=()=>{const b=$('[data-a=prof]');if(b&&S){b.innerHTML=LOGO;b.style.padding='3px';b.title='@'+S.un}};
-let AT;try{if(typeof achUnlock=='function'){const _au=achUnlock;achUnlock=function(g,i){const o=_au(g,i);if(o&&S&&Y.ok[S.id]){Y.ad=1;ys();clearTimeout(AT);AT=setTimeout(()=>push(),3e4)}return o}}}catch(e){console.warn('ach hook',e)}
-const adiff=()=>{if(!S||!CL||!Y.ok[S.id])return;try{for(const g in AGA)for(const i in AGA[g])if(!CL.a[g]?.[i])return Y.ad=1}catch{}};
+let AT;try{if(typeof achUnlock!='undefined'&&typeof achUnlock=='function'){const _au=achUnlock;achUnlock=function(g,i){const o=_au(g,i);if(o&&S&&Y.ok[S.id]){Y.ad=1;ys();clearTimeout(AT);AT=setTimeout(()=>push(),3e4)}return o}}}catch(e){console.warn('ach hook',e)}
+const adiff=()=>{if(!S||!CL||!Y.ok[S.id])return;try{const ga=GA();for(const g in ga)for(const i in ga[g])if(!CL.a[g]?.[i])return Y.ad=1}catch{}};
 const _l=A.like;if(_l)A.like=async(t,d)=>{await _l(t,d);if(S&&Y.ok[S.id]){Y.ld=1;ys();clearTimeout(LT);LT=setTimeout(()=>push(),2e4)}};
 setInterval(()=>{adiff();push(6e4)},3e5);document.addEventListener('visibilitychange',()=>{if(document.hidden){adiff();push()}});addEventListener('pagehide',()=>push());
 /* ---- now playing: only while a game is open, visible and unpaused; cleared on leave / other tab ---- */
@@ -1398,8 +1401,8 @@ Object.assign(A,{amode:(t,d)=>{AM=d.v;ACC('/account')},
   if(!await api('/rest/v1/rpc/ag_username_free',{m:'POST',a:0,b:{p:un}}))throw Error('That username is taken');
   const j=await api('/auth/v1/signup',{m:'POST',a:0,b:{email:val('e'),password:pw,data:{ag:'1',username:un,first:val('fn'),last:val('ln'),dob,sex:sx,country:val('co')}}});
   if(j.access_token)await started(j);else{AM='in';toast('Account created. Turn off "Confirm email" in Supabase, then sign in.');ACC('/account')}}),
- ays:()=>{modal();Y.ok[S.id]=1;ys();push().then(()=>toast('Play time synced'))},ayn:()=>{modal();Y.ok[S.id]=1;Y.pm=cl(TM);ys();push()},
- asyncnow:()=>busy(async()=>{await push();toast('Synced');ACC('/account')}),
+ ays:()=>{modal();Y.ok[S.id]=1;ys();lk().then(()=>push()).then(()=>toast(LE?'Sync failed: '+LE:'Play time synced'))},ayn:()=>{modal();Y.ok[S.id]=1;Y.pm=cl(TM);ys();lk().then(()=>push())},
+ asyncnow:()=>busy(async()=>{Y.ok[S.id]=1;ys();await lk();await push();toast(LE?'Sync failed: '+(/Slow down/.test(LE)?'try again in 20 seconds':LE):'Synced');ACC('/account')}),
  asave:()=>busy(async()=>{const o={Prefer:'return=minimal'};await api(`/rest/v1/ag_profiles?id=eq.${S.id}`,{m:'PATCH',h:o,b:{username:val('un'),bio:val('bio')||null,is_public:$('#pub').checked,show_playing:$('#shp').checked}});await api(`/rest/v1/ag_private?id=eq.${S.id}`,{m:'PATCH',h:o,b:{first_name:val('fn'),last_name:val('ln'),sex:val('sx'),country:val('co')||null}});S.un=val('un');sv('agacct',S);Y.sp=$('#shp').checked?1:0;ys();if(!Y.sp)nowSend(null);toast('Saved');go()}),
  aout:async()=>{await nowSend(null);try{await api('/auth/v1/logout',{m:'POST'})}catch{}await push();S=null;CL=null;FOL=null;sv('agacct',null);toast('Signed out');location.hash='#/account';render()},
  adel:()=>busy(async()=>{if(!confirm('Permanently delete your account and synced stats? This device keeps its own local stats.'))return;await api('/rest/v1/rpc/ag_delete_me',{m:'POST',b:{}});S=null;CL=null;Y.ok={};Y.lk={};Y.pm=cl(TM);ys();sv('agacct',null);toast('Account deleted');render()}),
@@ -1407,7 +1410,7 @@ Object.assign(A,{amode:(t,d)=>{AM=d.v;ACC('/account')},
  ctab:(t,d)=>{CS.t=d.v;CS.o=0;ACC('/community')},cmore:()=>{CS.o+=20;fill(1)},aopen:()=>{$('#agb')?.remove();location.hash='#/account'},ahide:()=>$('#agb')?.remove()});
 let QT;document.addEventListener('input',e=>{if(e.target.id=='dob'&&e.target.value){const n=age(e.target.value),el=$('#agage');if(el)el.textContent=n<0||n>120?'Check your birth date.':n<13?'Detected age '+n+'. Accounts are for ages 13 and up.':'Detected age: '+n}if(e.target.id=='aq'){clearTimeout(QT);QT=setTimeout(()=>{CS.q=e.target.value;CS.o=0;fill()},450)}});
 /* ---- boot: refresh from cloud, nudge signed-out users every 3 days ---- */
-setTimeout(async()=>{if(S){try{await pull();if(Y.ok[S.id]){await lk();push();if($('#stb,main')&&/^#\/(stats|lib|ach)?$/.test(location.hash))render()}}catch(e){console.warn(e.message)}return}
+setTimeout(async()=>{if(S){try{await pull();if(!Y.ok[S.id]){const n=tot(dlt(TM));if(n>0)ask(n);else{Y.ok[S.id]=1;ys()}}if(Y.ok[S.id]){await lk();push();if($('#stb,main')&&/^#\/(stats|lib|ach)?$/.test(location.hash))render()}}catch(e){console.warn(e.message)}return}
  if(Date.now()-(Y.nag||0)<2592e5||/^#\/(play|editor|account)/.test(location.hash))return;Y.nag=Date.now();ys();
  document.body.insertAdjacentHTML('beforeend',`<div id="agb" class="pn p-4 agb"><div class="flex gap-2 items-center mb-2"><span class="w-8 h-8 block">${LOGO}</span><b>Free Alligator account</b></div><div class="text-xs text-[var(--mu)] mb-3">Sync stats and likes across devices, follow players and compare games.</div><div class="flex gap-2"><button class="btn" data-a="aopen">Get started</button><button class="chip" data-a="ahide">Later</button></div></div>`)},4000);
 })();
