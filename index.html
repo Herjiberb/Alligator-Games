@@ -439,7 +439,7 @@ async function fillStg(id){if(!$('#stb'))return;const u=await usage(id);if(!$('#
  const row=(t,n,l,b)=>`<div class="rounded-lg bg-[var(--p2)] p-2"><div class="flex justify-between gap-2"><b class="truncate text-white">${h(l)}</b><span>${fmt(b)}</span></div><div class="flex gap-2 mt-1.5"><button class="btn !py-1 !px-2 !text-xs" data-a="legmove" data-t="${t}" data-n="${h(n)}" data-id="${id}">Move into this game</button><button class="btn !py-1 !px-2 !text-xs" data-a="legdel" data-t="${t}" data-n="${h(n)}" data-id="${id}">Delete</button></div></div>`;
  const rows=dbs.map((n,i)=>row('idb',n,'IndexedDB: '+n,sz[i])).concat(lk.length?[row('ls','',lk.length+' local storage key'+(lk.length==1?'':'s'),lk.reduce((a,k)=>a+(k.length+localStorage.getItem(k).length)*2,0))]:[]);
  $('#stl').innerHTML=rows.length?`<div class="text-[var(--mu)] pt-2 border-t border-[var(--ln)]">Older data from before per-game tracking. If it belongs to this game (for example saved worlds), move it in so it is tracked here.</div>`+rows.join(''):''}
-function setpage(){const m=FM();return`<div class="max-w-[720px] mx-auto px-5 py-6"><h1 class="text-3xl font-extrabold mb-4">Settings</h1><div class="pn p-5"><h2 class="text-xl font-bold mb-3">Tab favicon</h2>${[['app','App favicon','Always the alligator logo (default).'],['game','Game favicon','Uses the game\'s own icon while playing. Gator logo if the game has none.'],['dual','Dual favicon','Game icon with a small gator badge in the bottom right. Gator logo only if the game has no icon.']].map(([v,t,d])=>`<label class="flex gap-3 mb-3 items-start cursor-pointer"><input type="radio" name="fm" data-a="favm" data-v="${v}" ${m==v?'checked':''} class="mt-1.5"><span><b>${t}</b><div class="text-[var(--mu)] text-xs">${d}</div></span></label>`).join('')}</div>${DEVSET()}${UISET()}${RSET()}${offSet()}</div>`}
+function setpage(){const m=FM();return`<div class="max-w-[720px] mx-auto px-5 py-6"><h1 class="text-3xl font-extrabold mb-4">Settings</h1><div class="pn p-5"><h2 class="text-xl font-bold mb-3">Tab favicon</h2>${[['app','App favicon','Always the alligator logo (default).'],['game','Game favicon','Uses the game\'s own icon while playing. Gator logo if the game has none.'],['dual','Dual favicon','Game icon with a small gator badge in the bottom right. Gator logo only if the game has no icon.']].map(([v,t,d])=>`<label class="flex gap-3 mb-3 items-start cursor-pointer"><input type="radio" name="fm" data-a="favm" data-v="${v}" ${m==v?'checked':''} class="mt-1.5"><span><b>${t}</b><div class="text-[var(--mu)] text-xs">${d}</div></span></label>`).join('')}</div>${ONBSET()}${DEVSET()}${UISET()}${RSET()}${offSet()}</div>`}
 /* ---------- IndexedDB ---------- */
 const dbp=new Promise((ok,no)=>{const r=indexedDB.open('gator',3);r.onupgradeneeded=()=>['games','packs','likes','handles','plays','creators','prefs'].forEach(s=>r.result.objectStoreNames.contains(s)||r.result.createObjectStore(s));r.onsuccess=()=>ok(r.result);r.onerror=no});
 const tx=async(s,m,f)=>{const d=await dbp;return new Promise((ok,no)=>{const t=d.transaction(s,m),o=f(t.objectStore(s));t.oncomplete=()=>ok(o&&o.result);t.onerror=no})};
@@ -481,12 +481,12 @@ const hs=s=>[...s].reduce((a,c)=>(a*31+c.charCodeAt(0))|0,7);
 function ph(g,i=0){const c=g.color||`hsl(${Math.abs(hs(g.id||g.title||'x'))%360} 55% 38%)`;return'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="#0f1412"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><circle cx="${420+i*60}" cy="${120+i*30}" r="${90+i*25}" fill="#fff" opacity=".08"/><text x="28" y="326" font-family="sans-serif" font-weight="800" font-size="34" fill="#fff" opacity=".9">${h((g.title||'?').slice(0,24))}</text></svg>`)}
 const cov=g=>g.cover||ph(g);
 let PR=null;
-function prof(){const t={},c={};for(const x of G){const tm=((typeof TM!='undefined'&&TM[x.id])||{}).t||0,k=(L.has(x.id)?3:0)+Math.min(P[x.id]||0,6)*.5+Math.min(tm/36e5,4)*.6;if(!k)continue;(x.tags||[]).forEach(a=>t[a]=(t[a]||0)+k);(x.cr||[x.dev]).forEach(a=>{if(a)c[a]=(c[a]||0)+k})}const df={};G.forEach(x=>(x.tags||[]).forEach(a=>df[a]=(df[a]||0)+1));return{t,c,df,n:Object.keys(t).length,N:G.length||1}}
+function prof(){const t={},c={};for(const x of G){const tm=((typeof TM!='undefined'&&TM[x.id])||{}).t||0,k=(L.has(x.id)?3:0)+Math.min(P[x.id]||0,6)*.5+Math.min(tm/36e5,4)*.6;if(!k)continue;(x.tags||[]).forEach(a=>t[a]=(t[a]||0)+k);(x.cr||[x.dev]).forEach(a=>{if(a)c[a]=(c[a]||0)+k})}onbTags(t);const df={};G.forEach(x=>(x.tags||[]).forEach(a=>df[a]=(df[a]||0)+1));return{t,c,df,n:Object.keys(t).length,N:G.length||1}}
 function rec(g){PR=PR||prof();const p=PR,tg=g.tags||[];let s=g.featured?.8:0,w='',b=0;
  for(const a of tg){const v=(p.t[a]||0)*Math.log(1+p.N/(p.df[a]||1))/Math.sqrt(tg.length||1);s+=v*.35;if(v>b){b=v;w=a}}
  for(const a of (g.cr||[g.dev])){if(a&&p.c[a])s+=Math.min(p.c[a],8)*.25}
  if(g.date&&!up(g)){const d=(Date.now()-new Date(g.date))/864e5;if(d<30)s+=(30-d)/30*1.2}
- if(L.has(g.id))s-=4;s-=Math.min(P[g.id]||0,10)*.5;
+ {const ob=onbRec(g);s+=ob.s;if(ob.w&&(ob.s>b*.35||!w))w=ob.w}if(L.has(g.id))s-=4;s-=Math.min(P[g.id]||0,10)*.5;
  s+=((Math.abs(hs(g.id+new Date().toDateString()))%100)/100)*.4;
  return{s,w:w?'Because you like '+w:''}}
 const byRec=a=>{PR=prof();return [...a].sort((x,y)=>rec(y).s-rec(x).s)};
@@ -1174,8 +1174,131 @@ let raf=0;const dec=()=>{raf=0;$$('a.card[href^="#/game/"]').forEach(a=>{const g
 new MutationObserver(()=>{if(!raf)raf=requestAnimationFrame(dec)}).observe(app,{childList:true,subtree:true});
 })();
 
+/* ---------- Onboarding (favourite games) + similar.txt ---------- */
+const ONB=`minecraft|Minecraft|b|Simulation,Adventure,Casual
+gta|GTA|d|Action,Adventure
+terraria|Terraria|b|Platformer,Adventure,RPG
+cod|Call of Duty|b|Action,Multiplayer
+forza|Forza|d|Racing,Simulation
+candycrush|Candy Crush|m|Puzzle,Casual
+roblox|Roblox|b|Multiplayer,Casual,Adventure
+fortnite|Fortnite|b|Action,Multiplayer
+amongus|Among Us|b|Multiplayer,Strategy,Casual
+fallguys|Fall Guys|d|Multiplayer,Platformer,Casual
+apex|Apex Legends|d|Action,Multiplayer
+valorant|Valorant|d|Action,Multiplayer,Strategy
+csgo|Counter-Strike|d|Action,Multiplayer
+overwatch|Overwatch|d|Action,Multiplayer
+lol|League of Legends|d|Strategy,Multiplayer
+dota|Dota 2|d|Strategy,Multiplayer
+genshin|Genshin Impact|b|RPG,Adventure
+pokemon|Pokemon|b|RPG,Adventure,Strategy
+zelda|Zelda|d|Adventure,RPG,Puzzle
+mario|Super Mario|d|Platformer,Adventure,Arcade
+smash|Smash Bros|d|Action,Multiplayer,Arcade
+sonic|Sonic|b|Platformer,Arcade,Racing
+celeste|Celeste|d|Platformer,Puzzle
+hollowknight|Hollow Knight|d|Platformer,Adventure,Action
+stardew|Stardew Valley|b|Simulation,RPG,Casual
+animalcrossing|Animal Crossing|b|Simulation,Casual
+sims|The Sims|d|Simulation,Casual
+cities|Cities: Skylines|d|Simulation,Strategy
+civ|Civilization|d|Strategy,Simulation
+aoe|Age of Empires|d|Strategy
+starcraft|StarCraft|d|Strategy,Multiplayer
+clashofclans|Clash of Clans|m|Strategy,Casual,Multiplayer
+clashroyale|Clash Royale|m|Strategy,Multiplayer,Casual
+brawlstars|Brawl Stars|m|Action,Multiplayer,Arcade
+subway|Subway Surfers|m|Arcade,Casual,Racing
+templerun|Temple Run|m|Arcade,Casual,Action
+flappy|Flappy Bird|m|Arcade,Casual
+angrybirds|Angry Birds|m|Puzzle,Casual,Arcade
+fruitninja|Fruit Ninja|m|Arcade,Casual
+cuttherope|Cut the Rope|m|Puzzle,Casual
+2048|2048|b|Puzzle,Casual
+wordle|Wordle|b|Puzzle,Casual
+tetris|Tetris|b|Puzzle,Arcade
+pacman|Pac-Man|b|Arcade,Action
+snake|Snake|b|Arcade,Casual
+chess|Chess|b|Strategy,Puzzle
+solitaire|Solitaire|b|Casual,Puzzle
+geometrydash|Geometry Dash|b|Platformer,Arcade,Action
+fnaf|Five Nights at Freddy's|b|Horror
+outlast|Outlast|d|Horror,Adventure
+residentevil|Resident Evil|d|Horror,Action,Adventure
+phasmo|Phasmophobia|d|Horror,Multiplayer
+skyrim|Skyrim|d|RPG,Adventure
+witcher|The Witcher|d|RPG,Adventure,Action
+eldenring|Elden Ring|d|RPG,Action,Adventure
+darksouls|Dark Souls|d|RPG,Action
+fallout|Fallout|d|RPG,Adventure,Strategy
+diablo|Diablo|d|RPG,Action
+wow|World of Warcraft|d|RPG,Multiplayer
+rocketleague|Rocket League|d|Sports,Racing,Multiplayer
+fifa|FIFA / EA FC|b|Sports,Multiplayer
+nba2k|NBA 2K|b|Sports
+madden|Madden NFL|b|Sports
+mariokart|Mario Kart|b|Racing,Arcade,Multiplayer
+nfs|Need for Speed|d|Racing,Action
+asphalt|Asphalt|m|Racing,Arcade
+trucksim|Euro Truck Simulator|d|Simulation,Racing
+flightsim|Flight Simulator|d|Simulation
+portal|Portal|d|Puzzle,Adventure
+tf2|Team Fortress 2|d|Action,Multiplayer
+halo|Halo|d|Action,Multiplayer
+doom|DOOM|d|Action,Horror
+battlefield|Battlefield|d|Action,Multiplayer
+pubg|PUBG|b|Action,Multiplayer
+freefire|Free Fire|m|Action,Multiplayer
+slither|Slither.io|b|Arcade,Casual,Multiplayer
+agar|Agar.io|b|Arcade,Casual,Multiplayer
+vampsurv|Vampire Survivors|b|Action,Arcade,RPG
+undertale|Undertale|d|RPG,Adventure,Puzzle
+hades|Hades|d|Action,RPG
+balatro|Balatro|b|Puzzle,Strategy,Arcade
+cookieclicker|Cookie Clicker|b|Casual,Simulation
+pvz|Plants vs. Zombies|b|Strategy,Casual
+fnf|Friday Night Funkin'|b|Arcade,Casual
+tower|Bloons TD|b|Strategy,Casual
+fishing|Fishing games|b|Casual,Simulation
+racingmoto|Moto / bike games|b|Racing,Sports
+cardgames|Card games|b|Strategy,Casual
+escape|Escape rooms|b|Puzzle,Adventure,Horror
+idle|Idle / clicker games|b|Casual,Simulation`.split('\n').map(l=>{const[id,n,p,t]=l.split('|');return{id,n,p,t:t.split(',')}});
+const ONBM=Object.fromEntries(ONB.map(o=>[o.id,o]));
+let SIMF={},SIML={};try{SIML=JSON.parse(localStorage.agsim||'{}')}catch{}
+const simAll=()=>({...SIMF,...SIML});
+const simSave=()=>{try{localStorage.agsim=JSON.stringify(SIML)}catch{}PR=null};
+function simParse(t){const o={};for(const raw of t.split('\n')){const l=raw.trim();if(!l||l[0]=='#')continue;const p=l.split('|').map(x=>x.trim()),id=p[0];if(!id)continue;const e={v:[],m:[]};for(const q of p.slice(1)){const i=q.indexOf(':');if(i<0)continue;const k=q.slice(0,i).trim().toLowerCase(),ids=q.slice(i+1).split(',').map(x=>x.trim()).filter(Boolean);if(k=='very')e.v.push(...ids);else if(k=='mild')e.m.push(...ids)}o[id]=e}return o}
+function simText(){const a=simAll(),ks=Object.keys(a).filter(k=>a[k].v.length||a[k].m.length).sort();return'# similar.txt: which onboarding games each store game is similar to.\n# Format: game-id | very: id1, id2 | mild: id3\n# Edited in the editor (Similar tags). Put this file next to index.html.\n'+ks.map(k=>k+(a[k].v.length?' | very: '+a[k].v.join(', '):'')+(a[k].m.length?' | mild: '+a[k].m.join(', '):'')).join('\n')+'\n'}
+async function simLoad(){try{const r=await fetch('similar.txt',{cache:'no-cache'});if(r.ok){const t=await r.text();if(!/^\s*<(!doctype|html)/i.test(t))SIMF=simParse(t)}}catch{}PR=null}
+const onbSel=()=>{try{return JSON.parse(localStorage.agonb||'[]').filter(x=>ONBM[x])}catch{return[]}};
+function onbStr(){const eng=L.size*2+Object.values(P).reduce((a,b)=>a+Math.min(b,5),0);return Math.max(.4,1/(1+eng/6))}
+function onbTags(t){const s=onbSel();if(!s.length)return;const k=1.6*onbStr();s.forEach(i=>ONBM[i].t.forEach(a=>t[a]=(t[a]||0)+k/Math.sqrt(s.length/3+1)))}
+function onbRec(g){const s=onbSel(),e=simAll()[g.id];if(!s.length||!e)return{s:0,w:''};let sc=0,w='';for(const i of s){if(e.v.includes(i)){sc+=1;w=w||ONBM[i].n}else if(e.m.includes(i))sc+=.45}if(!w){const m=s.find(i=>e.m.includes(i));if(m)w=ONBM[m].n}return{s:Math.min(sc,2.5)*3.2*onbStr(),w:w?'Because you like '+w:''}}
+const ONBCSS=`#onb{position:fixed;inset:0;z-index:200;background:#0b100e;color:#fff;display:flex;flex-direction:column;font-family:system-ui,sans-serif;animation:achin .3s}#onb *{box-sizing:border-box}#onb .oh{padding:22px 20px 10px;max-width:1000px;width:100%;margin:0 auto}#onb h1{font-size:26px;font-weight:800;margin:0 0 4px}#onb p{margin:0;color:#9db0a8;font-size:14px}#onb .ot{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}#onb .ot input{flex:1;min-width:160px;padding:9px 14px;border-radius:12px;background:#151d19;border:1px solid #2a3832;color:#fff;outline:none}#onb .tb{padding:8px 14px;border-radius:12px;background:#151d19;border:1px solid #2a3832;cursor:pointer;font-size:13px}#onb .tb.on{border-color:#3ddc84;background:#3ddc8420}#onb .og{flex:1;overflow:auto;padding:6px 20px 110px;max-width:1000px;width:100%;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;align-content:start}#onb .oc{padding:14px 12px;border-radius:14px;background:#151d19;border:1px solid #2a3832;cursor:pointer;font-weight:600;font-size:14px;display:flex;flex-direction:column;gap:4px;transition:.15s;user-select:none}#onb .oc small{font-weight:400;color:#7f948b;font-size:11px}#onb .oc:hover{transform:translateY(-2px)}#onb .oc.on{border-color:#3ddc84;background:#3ddc8422}#onb .ob{position:fixed;left:0;right:0;bottom:0;padding:14px 20px calc(14px + env(safe-area-inset-bottom,0px));background:#0b100ef2;border-top:1px solid #2a3832;display:flex;gap:10px;align-items:center;justify-content:center}#onb .ob span{color:#9db0a8;font-size:13px;flex:1;max-width:500px}#onb .bt{padding:10px 20px;border-radius:12px;border:1px solid #2a3832;background:#151d19;color:#fff;cursor:pointer;font-weight:600}#onb .bt.p{background:#3ddc84;color:#06140c;border-color:#3ddc84}`;
+const ONBS={p:'all',q:''};
+function onbGrid(){const sel=new Set(onbSel()),q=ONBS.q.toLowerCase();const l=ONB.filter(o=>(ONBS.p=='all'||o.p=='b'||o.p==ONBS.p[0])&&(!q||o.n.toLowerCase().includes(q)));return l.map(o=>`<div class="oc ${sel.has(o.id)?'on':''}" data-a="onbt" data-id="${o.id}">${h(o.n)}<small>${o.p=='m'?'Mobile':o.p=='d'?'Desktop':'Mobile & desktop'}</small></div>`).join('')||'<p style="grid-column:1/-1;text-align:center;padding:30px">No matches.</p>'}
+function onbCount(){const e=$('#onbc');if(e){const n=onbSel().length;e.textContent=n?n+' picked. More picks give better recommendations.':'Pick a few, or skip for now.'}}
+function onbShow(edit){$('#onb')?.remove();if(!$('#onbcss'))document.head.insertAdjacentHTML('beforeend','<style id="onbcss">'+ONBCSS+'</style>');ONBS.p=MOB?'mobile':'all';ONBS.q='';
+ document.body.insertAdjacentHTML('beforeend',`<div id="onb"><div class="oh"><h1>${edit?'Your favourite games':'What games do you like?'}</h1><p>Tap everything you enjoy. We use it to pick games for you. You can change this any time in Settings.</p><div class="ot"><span class="tb" data-a="onbp" data-v="all">All</span><span class="tb" data-a="onbp" data-v="mobile">Mobile</span><span class="tb" data-a="onbp" data-v="desktop">Desktop</span><input id="onbq" placeholder="Search games"></div></div><div class="og" id="onbg">${onbGrid()}</div><div class="ob"><span id="onbc"></span>${edit?'':'<button class="bt" data-a="onbskip">Skip</button>'}<button class="bt p" data-a="onbdone">${edit?'Save':'Done'}</button></div></div>`);onbTabs();onbCount()}
+function onbTabs(){$$('#onb .tb').forEach(e=>e.classList.toggle('on',e.dataset.v==ONBS.p))}
+const ONBSET=()=>{const n=onbSel().length;return`<div class="pn p-5 mt-5"><h2 class="text-xl font-bold mb-1">Favourite games</h2><p class="text-[var(--mu)] text-xs mb-3">Games you told us you like. This shapes your recommendations, most strongly at the start. ${n?n+' picked.':'None picked yet.'}</p><button class="btn ac" data-a="onbedit">${n?'Edit favourites':'Pick favourites'}</button></div>`};
+document.addEventListener('input',e=>{const t=e.target;if(t.id=='onbq'){ONBS.q=t.value;$('#onbg').innerHTML=onbGrid()}else if(t.id=='simq'){E.simq=t.value;const l=$('#simlist');if(l)l.innerHTML=simRows()}else if(t.id=='simoq'){E.simoq=t.value;const l=$('#simpanel');if(l)l.innerHTML=simPanel()}});
+function simRows(){const q=(E.simq||'').toLowerCase(),a=simAll();return G.filter(g=>!q||g.title.toLowerCase().includes(q)).map(g=>{const e=a[g.id]||{v:[],m:[]};return`<div class="flex items-center gap-3 py-2 border-b border-[#3d444d]"><b class="flex-1 truncate">${h(g.title)}</b><span class="d">${e.v.length} very, ${e.m.length} mild${SIML[g.id]?' · edited':''}</span><button class="gb ${E.simg==g.id?'p':''}" data-a="simpick" data-id="${h(g.id)}">Edit</button></div>`}).join('')||'<p class="d">No games.</p>'}
+function simPanel(){const g=gm(E.simg);if(!g)return'';const e=simAll()[g.id]||{v:[],m:[]},q=(E.simoq||'').toLowerCase();return`<h3 style="margin:14px 0 6px">${h(g.title)} is similar to:</h3><input type="text" id="simoq" placeholder="Filter games" value="${h(E.simoq||'')}" class="mb-2"><div style="max-height:420px;overflow:auto;border:1px solid #3d444d;border-radius:6px">${ONB.filter(o=>!q||o.n.toLowerCase().includes(q)).map(o=>{const s=e.v.includes(o.id)?2:e.m.includes(o.id)?1:0;return`<div class="flex items-center gap-2 px-3 py-1.5" style="border-bottom:1px solid #30363d"><span class="flex-1 truncate">${h(o.n)}</span>${[['None',0],['Mildly',1],['Very',2]].map(([n,v])=>`<button class="gb ${s==v&&v?'p':''}" style="${s==v&&!v?'opacity:.5':''}" data-a="simset" data-o="${o.id}" data-v="${v}">${n}</button>`).join('')}</div>`}).join('')}</div>`}
+Object.assign(A,{onbt:(t,d)=>{const s=new Set(onbSel());s.has(d.id)?s.delete(d.id):s.add(d.id);localStorage.agonb=JSON.stringify([...s]);PR=null;t.classList.toggle('on');onbCount()},onbp:(t,d)=>{ONBS.p=d.v;onbTabs();$('#onbg').innerHTML=onbGrid()},onbskip:()=>{localStorage.agonbd='1';$('#onb')?.remove()},onbdone:()=>{localStorage.agonbd='1';PR=null;$('#onb')?.remove();toast('Saved. Recommendations updated');render()},onbedit:()=>onbShow(true),
+ simpick:(t,d)=>{E.simg=d.id;E.simoq='';const l=$('#simlist');if(l)l.innerHTML=simRows();const p=$('#simpanel');if(p){p.innerHTML=simPanel();p.scrollIntoView({block:'nearest'})}},
+ simset:(t,d)=>{const g=E.simg,c=simAll()[g]||{v:[],m:[]},e={v:c.v.filter(x=>x!=d.o),m:c.m.filter(x=>x!=d.o)};if(d.v==2)e.v.push(d.o);else if(d.v==1)e.m.push(d.o);SIML[g]=e;simSave();$('#simpanel').innerHTML=simPanel();$('#simlist').innerHTML=simRows()},
+ simreset:()=>{if(!confirm('Discard your local similar edits and use similar.txt only?'))return;SIML={};simSave();ed()},
+ simdl:()=>{saveTxt(simText(),'similar.txt');toast('Downloaded similar.txt')},
+ simcp:async()=>{try{await navigator.clipboard.writeText(simText());toast('Copied')}catch{saveTxt(simText(),'similar.txt');toast('Clipboard refused. Downloaded instead')}}});
+IC.similar=ic('#f0b429','<path d="M12 3l2.5 6 6.5.5-5 4.3 1.6 6.4L12 17l-5.6 3.2L8 13.8 3 9.5 9.5 9z"/>');
+NAV[0][1].push(['similar','Similar tags']);
+S.similar=()=>`<h2 style="margin-top:0">Similar tags</h2><p class="d mb-3">Say which well-known games (Minecraft, Forza, Candy Crush...) each store game is very or mildly similar to. This drives onboarding recommendations. Edits save in this browser; export <b>similar.txt</b> and upload it next to index.html to make them live for everyone.</p><div class="flex flex-wrap gap-2 mb-3"><button class="gb p" data-a="simdl">Export similar.txt</button><button class="gb" data-a="simcp">Copy text</button><button class="gb" data-a="ghup">Open upload page</button><button class="gb r" data-a="simreset">Reset local edits</button></div><input type="text" id="simq" placeholder="Search your games" value="${h(E.simq||'')}" class="mb-2"><div id="simlist" style="max-height:320px;overflow:auto">${simRows()}</div><div id="simpanel">${simPanel()}</div>`;
+
 (async()=>{if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
- await dropPH();await load();await offBoot();await uiGate();render();
+ await dropPH();await load();await simLoad();await offBoot();await uiGate();render();if(!localStorage.agonbd&&!/^#\/(play|editor)/.test(location.hash))onbShow();
  // catalog refresh runs in the background so a missing/slow connection never blocks the app
  const sig=()=>G.map(g=>g.id+g.sig+g.status).join();const b=sig();
  try{if(navigator.onLine)await Promise.race([cat(),new Promise(r=>setTimeout(r,8000))]);await load();await offBoot()}catch{}
