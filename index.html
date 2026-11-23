@@ -1345,12 +1345,13 @@ async function started(j){setS(j);await pull();await lk();const x=dlt(TM),n=tot(
  else{Y.ok[S.id]=1;ys();push()}
  toast('Signed in as @'+S.un);render()}
 /* ---- hooks into the main app ---- */
-const _S=STATS;STATS=function(){if(!S||!CL)return _S();const r=TM;TM=vw().g;try{return _S()}finally{TM=r}};
+const _S=typeof STATS=='function'?STATS:null;if(_S)STATS=function(){if(!S||!CL)return _S();const r=TM;TM=vw().g;try{return _S()}finally{TM=r}};
 window.acctNote=()=>S?'Synced to your account @'+h(S.un)+'.':'Stored on this device. <a href="#/account" class="underline text-[var(--ac)]">Sign in</a> to sync across devices.';
 window.acDecor=()=>{const b=$('[data-a=prof]');if(b&&S){b.innerHTML=LOGO;b.style.padding='3px';b.title='@'+S.un}};
-let AT;const _au=achUnlock;achUnlock=function(g,i){const o=_au(g,i);if(o&&S&&Y.ok[S.id]){Y.ad=1;ys();clearTimeout(AT);AT=setTimeout(()=>push(),3e4)}return o};
-const _l=A.like;A.like=async(t,d)=>{await _l(t,d);if(S&&Y.ok[S.id]){Y.ld=1;ys();clearTimeout(LT);LT=setTimeout(()=>push(),2e4)}};
-setInterval(()=>push(6e4),3e5);document.addEventListener('visibilitychange',()=>{if(document.hidden)push()});addEventListener('pagehide',()=>push());
+let AT;try{if(typeof achUnlock=='function'){const _au=achUnlock;achUnlock=function(g,i){const o=_au(g,i);if(o&&S&&Y.ok[S.id]){Y.ad=1;ys();clearTimeout(AT);AT=setTimeout(()=>push(),3e4)}return o}}}catch(e){console.warn('ach hook',e)}
+const adiff=()=>{if(!S||!CL||!Y.ok[S.id])return;try{for(const g in AGA)for(const i in AGA[g])if(!CL.a[g]?.[i])return Y.ad=1}catch{}};
+const _l=A.like;if(_l)A.like=async(t,d)=>{await _l(t,d);if(S&&Y.ok[S.id]){Y.ld=1;ys();clearTimeout(LT);LT=setTimeout(()=>push(),2e4)}};
+setInterval(()=>{adiff();push(6e4)},3e5);document.addEventListener('visibilitychange',()=>{if(document.hidden){adiff();push()}});addEventListener('pagehide',()=>push());
 /* ---- now playing: only while a game is open, visible and unpaused; cleared on leave / other tab ---- */
 let PL=null,PS=0,PT;const nowSend=async g=>{if(!S||!Y.ok[S.id])return;PL=g;PS=Date.now();try{await api('/rest/v1/rpc/ag_now',{m:'POST',b:{p_game:g}})}catch{}},
 want=()=>S&&Y.ok[S.id]&&Y.sp!==0&&$('#gf')&&CUR&&!document.hidden&&!PZ?CUR:null;
