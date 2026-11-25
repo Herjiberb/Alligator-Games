@@ -43,10 +43,14 @@ let AT;const _au=achUnlock;achUnlock=function(g,i){const o=_au(g,i);if(o&&S&&Y.o
 const _l=A.like;A.like=async(t,d)=>{await _l(t,d);if(S&&Y.ok[S.id]){Y.ld=1;ys();clearTimeout(LT);LT=setTimeout(()=>push(),2e4)}};
 setInterval(()=>push(6e4),3e5);document.addEventListener('visibilitychange',()=>{if(document.hidden)push()});addEventListener('pagehide',()=>push());
 /* ---- now playing: only while a game is open, visible and unpaused; cleared on leave / other tab ---- */
-let PL=null,PS=0,PT;const nowSend=async g=>{if(!S||!Y.ok[S.id])return;PL=g;PS=Date.now();try{await api('/rest/v1/rpc/ag_now',{m:'POST',b:{p_game:g}})}catch{}},
+let PL=null,PS=0,PT;const nowSend=async g=>{if(!S||!Y.ok[S.id])return;const p=PL;PL=g;PS=Date.now();try{await api('/rest/v1/rpc/ag_now',{m:'POST',b:{p_game:g}})}catch{PL=p===g?undefined:p;PS=0}},
 want=()=>S&&Y.ok[S.id]&&Y.sp!==0&&$('#gf')&&CUR&&!document.hidden&&!PZ?CUR:null;
-setInterval(()=>{const g=want();if(g!==PL){clearTimeout(PT);PT=setTimeout(()=>{const w=want();if(w!==PL)nowSend(w)},g?6e3:2e3)}else if(g&&Date.now()-PS>24e4)nowSend(g)},5000);
-addEventListener('pagehide',()=>{if(PL)nowSend(null)});document.addEventListener('visibilitychange',()=>{if(document.hidden&&PL){clearTimeout(PT);PT=setTimeout(()=>{if(!want()&&PL)nowSend(null)},15000)}});
+const nowKeep=()=>{if(!S)return;try{fetch(U+'/rest/v1/rpc/ag_now',{method:'POST',keepalive:true,headers:{apikey:K,'Content-Type':'application/json',Authorization:'Bearer '+S.at},body:'{"p_game":null}'})}catch{}PL=null},
+stopNow=()=>{if(PL){clearTimeout(PT);nowKeep()}},
+tickNow=()=>{const g=want();if(g!==PL){clearTimeout(PT);if(!g)return nowSend(null);PT=setTimeout(()=>{const w=want();if(w!==PL)nowSend(w)},4e3)}else if(g&&Date.now()-PS>6e4)nowSend(g)};
+setInterval(tickNow,2000);
+addEventListener('hashchange',()=>setTimeout(tickNow,50));addEventListener('pagehide',stopNow);addEventListener('beforeunload',stopNow);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)stopNow();else tickNow()});
 const fpBox=()=>'<div class="pn p-3 mb-4"><b class="text-sm">Playing now</b><div id="fpl" class="text-sm mt-1 text-[var(--mu)]">Loading…</div></div>';
 async function loadFp(){const el=$('#fpl');if(!el||!S)return;try{const r=await api('/rest/v1/rpc/ag_friends_playing',{m:'POST',b:{}});el.innerHTML=r.length?r.map(x=>{const g=gm(x.game);return`<div class="flex items-center gap-2 py-1 text-white"><span class="w-6 h-6 block">${LOGO}</span><a href="#/u/${h(x.username)}" class="font-bold">${h(x.username)}</a> is playing ${g?`<a href="#/game/${h(x.game)}" class="text-[var(--ac)]">${h(g.title)}</a>`:'a game'}</div>`}).join(''):'No one you follow is playing right now.'}catch{el.textContent=''}}
 setInterval(()=>{if($('#fpl')&&!document.hidden)loadFp()},6e4);
