@@ -4,19 +4,25 @@
 bird-rows | very: candycrush | mild: 2048, tetris
 block-game-ultimate-neo | very: terraria | mild: minecraft
 blood-gummy-battle-royale | very: fortnite | mild: roblox, cod
+blood-monkey-explorer | very: mario, sonic | mild: hollowknight, geometrydash
 butter | mild: angrybirds
 cave-detonation | mild: solitaire, 2048
 corn-pop | very: angrybirds
 corn-pop-2 | very: angrybirds
 cube-crusher | mild: 2048
+cuephoria | mild: cardgames
+dirt-bike-mayhem | very: racingmoto | mild: forza, asphalt, nfs
 earthy-racers | very: forza, asphalt | mild: nfs, mariokart
 frog-hop | mild: flappy, subway, templerun
+hoof-roundup | very: chess
 infinite-wipe-glitch | very: geometrydash
 infinite-wipe-glitch-2 | very: geometrydash
 mamas-cold-treats | mild: stardew, animalcrossing
 plants-vs-lawn-mowers | very: pvz
+pop-goes-the-wart | mild: idle
 rogue-ladybird | mild: terraria
 rough-lifemickle | very: gta | mild: fallout
 sanguine-fighters | very: smash | mild: doom
+thanksgiving-blast | very: templerun, subway
 the-grand-todd | very: escape | mild: gta, amongus
-the-rogue-ladybird | mild: terraria
+the-rogue-ladybird | very: hades | mild: terraria
